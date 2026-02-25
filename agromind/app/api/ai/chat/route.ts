@@ -42,15 +42,24 @@ export async function POST(req: NextRequest) {
     const encoder = new TextEncoder();
     const readable = new ReadableStream({
       async start(controller) {
-        for await (const chunk of stream) {
-          if (
-            chunk.type === "content_block_delta" &&
-            chunk.delta.type === "text_delta"
-          ) {
-            controller.enqueue(encoder.encode(chunk.delta.text));
+        try {
+          for await (const chunk of stream) {
+            if (
+              chunk.type === "content_block_delta" &&
+              chunk.delta.type === "text_delta"
+            ) {
+              controller.enqueue(encoder.encode(chunk.delta.text));
+            }
           }
+        } catch (e: unknown) {
+          const msg =
+            e instanceof Error && e.message.includes("credit balance")
+              ? "❌ Sin créditos en la API de Anthropic. Ve a console.anthropic.com → Plans & Billing para recargar."
+              : "❌ Error al conectar con el agente. Verifica tu conexión y vuelve a intentarlo.";
+          controller.enqueue(encoder.encode(msg));
+        } finally {
+          controller.close();
         }
-        controller.close();
       },
     });
 
