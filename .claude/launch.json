@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "AgroMind (Next.js)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "agromind", "run", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "Prisma Studio",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "agromind", "run", "db:studio"],
+      "port": 5555
+    }
+  ]
+}

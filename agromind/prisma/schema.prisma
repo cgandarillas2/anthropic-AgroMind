@@ -1,0 +1,332 @@
+// AgroMind MVP - Prisma Schema
+// Dominio: cerezos, Región del Maule, Chile
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+// USUARIOS Y AUTENTICACIÓN (Clerk sincroniza id)
+// ─────────────────────────────────────────────
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  name      String
+  role      UserRole @default(FARMER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  farms Farm[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  FARMER
+  AGRONOMIST
+  ADMIN
+}
+
+// ─────────────────────────────────────────────
+// CAMPO (PREDIO)
+// ─────────────────────────────────────────────
+model Farm {
+  id        String  @id @default(cuid())
+  name      String
+  address   String
+  region    String  // "Maule", "O'Higgins", etc.
+  commune   String  // "Curicó", "Talca", etc.
+  latitude  Float
+  longitude Float
+  totalArea Float   // hectáreas totales
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lots        Lot[]
+  weatherLogs WeatherLog[]
+  alerts      Alert[]
+
+  @@map("farms")
+}
+
+// ─────────────────────────────────────────────
+// LOTE (subdivisión del campo)
+// ─────────────────────────────────────────────
+model Lot {
+  id        String  @id @default(cuid())
+  name      String  // "Lote A", "Sector Norte", etc.
+  area      Float   // hectáreas
+  soilType  String? // "Franco arcilloso", "Arenoso"
+  slopePerc Float?  // porcentaje de pendiente
+
+  farmId String
+  farm   Farm   @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  crops Crop[]
+
+  @@map("lots")
+}
+
+// ─────────────────────────────────────────────
+// CULTIVO (qué se planta en el lote)
+// ─────────────────────────────────────────────
+model Crop {
+  id        String  @id @default(cuid())
+  species   String  // "Cerezo"
+  variety   String  // "Regina", "Bing", "Lapins"
+  plantYear Int     // año de plantación
+  density   Float   // plantas por hectárea
+  rootstock String? // portainjerto: "Colt", "Mahaleb"
+
+  lotId String
+  lot   Lot    @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  productionCycles ProductionCycle[]
+
+  @@map("crops")
+}
+
+// ─────────────────────────────────────────────
+// CICLO PRODUCTIVO
+// Específico para cerezos: fenología, horas frío, calibre
+// ─────────────────────────────────────────────
+model ProductionCycle {
+  id        String   @id @default(cuid())
+  season    String   // "2024/2025"
+  startDate DateTime
+  endDate   DateTime?
+  isActive  Boolean  @default(true)
+
+  // Fenología del cerezo
+  estadoFenologico EstadoFenologico @default(DORMANCIA)
+
+  // Horas frío acumuladas (meta ≥ 800h bajo 7°C para salir de dormancia)
+  horasFrioAcumuladas Int @default(0)
+
+  // Estimaciones de cosecha
+  calibreEstimado      Float?    // mm de diámetro promedio estimado
+  rendimientoEstimado  Float?    // kg/ha estimado
+  fechaCosechaEstimada DateTime?
+  fechaCosechaReal     DateTime?
+
+  // Destino de la producción
+  destinoProduccion DestinoProduccion @default(EXPORTACION)
+
+  // Resultado final (se llena al cerrar el ciclo)
+  rendimientoReal Float? // kg/ha real al cosechar
+  precioPromedio  Float? // CLP por kg obtenido
+
+  notas String?
+
+  cropId String
+  crop   Crop   @relation(fields: [cropId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  inputs       Input[]
+  laborRecords LaborRecord[]
+
+  @@map("production_cycles")
+}
+
+enum EstadoFenologico {
+  DORMANCIA           // Jun-Ago: reposo invernal
+  BROTAMIENTO         // Sep: yemas hinchadas
+  FLORACION           // Oct: flor blanca abierta (crítico: heladas)
+  CUAJA               // Nov: fruto cuajado post-polinización
+  CRECIMIENTO_FRUTO   // Nov-Dic: endurecimiento carozo
+  LLENADO_FRUTO       // Dic-Ene: acumulación azúcares (crítico: calor)
+  MADUREZ             // Ene: listo para cosechar
+  POSTCOSECHA         // Feb-Mar: recuperación, poda
+}
+
+enum DestinoProduccion {
+  EXPORTACION
+  MERCADO_INTERNO
+  INDUSTRIA
+  MIXTO
+}
+
+// ─────────────────────────────────────────────
+// INSUMOS (fertilizantes, agroquímicos, riego)
+// ─────────────────────────────────────────────
+model Input {
+  id          String        @id @default(cuid())
+  date        DateTime
+  category    InputCategory
+  name        String        // "Nitrato de amonio", "Captan", "Clorpirifos"
+  quantity    Float
+  unit        String        // "kg", "L", "unidad"
+  costPerUnit Float         // CLP por unidad
+  totalCost   Float         // quantity × costPerUnit
+  supplier    String?
+  notes       String?
+
+  productionCycleId String
+  productionCycle   ProductionCycle @relation(fields: [productionCycleId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("inputs")
+}
+
+enum InputCategory {
+  FERTILIZANTE
+  HERBICIDA
+  FUNGICIDA
+  INSECTICIDA
+  RIEGO
+  MATERIAL_VEGETAL
+  OTRO
+}
+
+// ─────────────────────────────────────────────
+// MANO DE OBRA
+// ─────────────────────────────────────────────
+model LaborRecord {
+  id             String        @id @default(cuid())
+  date           DateTime
+  activity       LaborActivity
+  workerCount    Int           // número de personas
+  hoursPerWorker Float         // horas por persona
+  totalHours     Float         // workerCount × hoursPerWorker
+  costPerHour    Float         // CLP por hora-persona
+  totalCost      Float         // totalHours × costPerHour
+  notes          String?
+
+  productionCycleId String
+  productionCycle   ProductionCycle @relation(fields: [productionCycleId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("labor_records")
+}
+
+enum LaborActivity {
+  PODA
+  RALEO
+  APLICACION_FITOSANITARIA
+  RIEGO
+  FERTILIZACION
+  COSECHA
+  EMPAQUE
+  MONITOREO
+  INSTALACION_MALLA
+  OTRO
+}
+
+// ─────────────────────────────────────────────
+// REGISTROS CLIMÁTICOS
+// Datos horarios/diarios desde Open-Meteo
+// ─────────────────────────────────────────────
+model WeatherLog {
+  id        String   @id @default(cuid())
+  timestamp DateTime
+
+  // Temperatura
+  tempC    Float  // temperatura en ese momento
+  tempMinC Float? // mínima del día (registro diario)
+  tempMaxC Float? // máxima del día
+
+  // Precipitación
+  precipMm Float @default(0) // mm
+
+  // Viento
+  windSpeedKmh  Float? // km/h
+  windDirection Int?   // grados 0-360
+
+  // Humedad y radiación
+  humidity      Float? // %
+  solarRadiation Float? // W/m²
+
+  // Evapotranspiración de referencia (Penman-Monteith)
+  etMm Float? // mm/día
+
+  // Indicadores calculados para cerezos
+  esBajoUmbralHelada  Boolean @default(false) // tempC < -1°C
+  esRiesgoLluvia      Boolean @default(false) // lluvia en período crítico
+  contribuyeHorasFrio Boolean @default(false) // tempC < 7°C (cuenta horas frío)
+
+  farmId String
+  farm   Farm   @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([farmId, timestamp])
+  @@index([farmId, timestamp])
+  @@map("weather_logs")
+}
+
+// ─────────────────────────────────────────────
+// ALERTAS
+// Generadas por reglas automáticas o por el agente IA (Claude)
+// ─────────────────────────────────────────────
+model Alert {
+  id             String        @id @default(cuid())
+  type           AlertType
+  severity       AlertSeverity
+  title          String
+  description    String
+  recommendation String?       // acción concreta sugerida por el agente
+
+  // Contexto del valor que disparó la alerta
+  triggerValue  Float?  // ej: -2.3 (°C)
+  triggerMetric String? // "temperatura_minima", "precipitacion_mm"
+
+  isRead     Boolean   @default(false)
+  isResolved Boolean   @default(false)
+  resolvedAt DateTime?
+
+  source AlertSource @default(AUTOMATICA)
+
+  farmId String
+  farm   Farm   @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([farmId, isRead])
+  @@index([farmId, createdAt])
+  @@map("alerts")
+}
+
+enum AlertType {
+  HELADA             // temp < -1°C durante floración
+  LLUVIA_COSECHA     // lluvia en período de cosecha
+  DEFICIT_HORAS_FRIO // horas frío insuficientes al salir del invierno
+  GOLPE_CALOR        // temp > 35°C en llenado de fruto
+  VIENTO_FUERTE      // viento > 60 km/h
+  HUMEDAD_ALTA       // riesgo de hongos por HR > 90%
+  RIEGO_PENDIENTE    // déficit hídrico detectado por ET
+  GENERAL            // alerta general del agente IA
+}
+
+enum AlertSeverity {
+  INFO
+  ADVERTENCIA
+  CRITICA
+}
+
+enum AlertSource {
+  AUTOMATICA // regla determinística del sistema
+  IA         // generada por Claude
+  MANUAL     // ingresada por el agricultor
+}
