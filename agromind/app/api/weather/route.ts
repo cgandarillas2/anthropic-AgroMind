@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   const farmId = searchParams.get("farmId");
 
   try {
-    // Obtener la farm con el ciclo activo
+    // Get farm with active cycle
     const farm = await db.farm.findFirst({
       where: farmId ? { id: farmId, owner: { clerkId: userId } } : { owner: { clerkId: userId } },
       include: {
@@ -34,16 +34,16 @@ export async function GET(req: NextRequest) {
 
     if (!farm) return NextResponse.json({ error: "Farm not found" }, { status: 404 });
 
-    // Obtener datos de clima desde Open-Meteo
+    // Get weather data from Open-Meteo
     const weatherData = await fetchWeather(farm.latitude, farm.longitude);
 
-    // Extraer el ciclo activo más reciente
+    // Extract most recent active cycle
     const cicloActivo = farm.lots
       .flatMap((l) => l.crops)
       .flatMap((c) => c.productionCycles)
       .find((cy) => cy.isActive);
 
-    // Calcular riesgos para cerezos
+    // Calculate risks for cherry trees
     const riesgos = detectarRiesgos(
       weatherData.forecast,
       cicloActivo?.estadoFenologico ?? "CUAJA",
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
       weatherData.current.humidity
     );
 
-    // Guardar registro climático del día actual en DB (fire-and-forget)
+    // Save today's weather log in DB (fire-and-forget)
     const hoy = new Date();
     hoy.setHours(12, 0, 0, 0);
     const todayForecast = weatherData.forecast[0];

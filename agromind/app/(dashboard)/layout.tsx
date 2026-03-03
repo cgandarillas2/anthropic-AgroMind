@@ -5,14 +5,14 @@ import { Header } from "@/components/layout/header";
 import { db } from "@/lib/db";
 
 /**
- * Sincroniza el usuario de Clerk con la DB en cada primer acceso.
- * Necesario en desarrollo local donde los webhooks no llegan a localhost.
+ * Syncs Clerk user with DB on first access.
+ * Necessary in local development where webhooks don't reach localhost.
  */
 async function syncUser(clerkId: string) {
   const existing = await db.user.findUnique({ where: { clerkId } });
   if (existing) return existing;
 
-  // No existe — crearlo con los datos de Clerk
+  // Doesn't exist — create it with Clerk data
   const clerkUser = await currentUser();
   if (!clerkUser) return null;
 

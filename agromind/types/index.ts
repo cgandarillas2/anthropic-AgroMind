@@ -180,58 +180,58 @@ export interface CycleCostSummary {
   projectedMargin?: number;
 }
 
-// ─── Labels para enums (UI) ───
+// ─── Labels for enums (UI) ───
 
 export const ESTADO_FENOLOGICO_LABELS: Record<EstadoFenologico, string> = {
-  DORMANCIA: "Dormancia",
-  BROTAMIENTO: "Brotamiento",
-  FLORACION: "Floración",
-  CUAJA: "Cuaja",
-  CRECIMIENTO_FRUTO: "Crecimiento de fruto",
-  LLENADO_FRUTO: "Llenado de fruto",
-  MADUREZ: "Madurez / Cosecha",
-  POSTCOSECHA: "Postcosecha",
+  DORMANCIA: "Dormancy",
+  BROTAMIENTO: "Budbreak",
+  FLORACION: "Flowering",
+  CUAJA: "Set",
+  CRECIMIENTO_FRUTO: "Growth",
+  LLENADO_FRUTO: "Filling",
+  MADUREZ: "Harvest",
+  POSTCOSECHA: "Post-harvest",
 };
 
 export const DESTINO_LABELS: Record<DestinoProduccion, string> = {
-  EXPORTACION: "Exportación",
-  MERCADO_INTERNO: "Mercado interno",
-  INDUSTRIA: "Industria",
-  MIXTO: "Mixto",
+  EXPORTACION: "Export",
+  MERCADO_INTERNO: "Domestic Market",
+  INDUSTRIA: "Industry",
+  MIXTO: "Mixed",
 };
 
 export const INPUT_CATEGORY_LABELS: Record<InputCategory, string> = {
-  FERTILIZANTE: "Fertilizante",
-  HERBICIDA: "Herbicida",
-  FUNGICIDA: "Fungicida",
-  INSECTICIDA: "Insecticida",
-  RIEGO: "Riego",
-  MATERIAL_VEGETAL: "Material vegetal",
-  OTRO: "Otro",
+  FERTILIZANTE: "Fertilizer",
+  HERBICIDA: "Herbicide",
+  FUNGICIDA: "Fungicide",
+  INSECTICIDA: "Insecticide",
+  RIEGO: "Irrigation",
+  MATERIAL_VEGETAL: "Plant Material",
+  OTRO: "Other",
 };
 
 export const LABOR_ACTIVITY_LABELS: Record<LaborActivity, string> = {
-  PODA: "Poda",
-  RALEO: "Raleo",
-  APLICACION_FITOSANITARIA: "Aplicación fitosanitaria",
-  RIEGO: "Riego",
-  FERTILIZACION: "Fertilización",
-  COSECHA: "Cosecha",
-  EMPAQUE: "Empaque",
-  MONITOREO: "Monitoreo",
-  INSTALACION_MALLA: "Instalación de malla",
-  OTRO: "Otro",
+  PODA: "Pruning",
+  RALEO: "Thinning",
+  APLICACION_FITOSANITARIA: "Phytosanitary Application",
+  RIEGO: "Irrigation",
+  FERTILIZACION: "Fertilization",
+  COSECHA: "Harvest",
+  EMPAQUE: "Packing",
+  MONITOREO: "Monitoring",
+  INSTALACION_MALLA: "Net Installation",
+  OTRO: "Other",
 };
 
 export const ALERT_TYPE_LABELS: Record<AlertType, string> = {
-  HELADA: "Helada",
-  LLUVIA_COSECHA: "Lluvia en cosecha",
-  DEFICIT_HORAS_FRIO: "Déficit de horas frío",
-  GOLPE_CALOR: "Golpe de calor",
-  VIENTO_FUERTE: "Viento fuerte",
-  HUMEDAD_ALTA: "Humedad alta",
-  RIEGO_PENDIENTE: "Riego pendiente",
-  GENERAL: "Alerta general",
+  HELADA: "Frost",
+  LLUVIA_COSECHA: "Harvest Rain",
+  DEFICIT_HORAS_FRIO: "Chill Hours Deficit",
+  GOLPE_CALOR: "Heat Stress",
+  VIENTO_FUERTE: "Strong Wind",
+  HUMEDAD_ALTA: "High Humidity",
+  RIEGO_PENDIENTE: "Pending Irrigation",
+  GENERAL: "General Alert",
 };
 
 export const SEVERITY_COLOR: Record<AlertSeverity, string> = {

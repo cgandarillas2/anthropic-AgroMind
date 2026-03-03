@@ -14,7 +14,7 @@ const UpdateCycleSchema = z.object({
   notas: z.string().optional().nullable(),
 });
 
-// GET /api/cycles — ciclos activos del usuario
+// GET /api/cycles — user's active cycles
 export async function GET(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// PATCH /api/cycles — actualizar ciclo
+// PATCH /api/cycles — update cycle
 export async function PATCH(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

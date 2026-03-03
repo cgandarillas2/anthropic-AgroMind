@@ -19,7 +19,7 @@ export function ColdHoursCard({ horasAcumuladas, estadoFenologico, variedad }: P
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-semibold text-gray-700 flex items-center justify-between">
-          <span>❄️ Horas frío acumuladas</span>
+          <span>❄️ Accumulated chill hours</span>
           <span className="text-xs font-normal text-gray-400">{variedad}</span>
         </CardTitle>
       </CardHeader>
@@ -29,7 +29,7 @@ export function ColdHoursCard({ horasAcumuladas, estadoFenologico, variedad }: P
             {horasAcumuladas}h
           </span>
           <span className="text-sm text-gray-400">
-            meta: {UMBRALES.HORAS_FRIO_META}h
+            target: {UMBRALES.HORAS_FRIO_META}h
           </span>
         </div>
 
@@ -49,19 +49,19 @@ export function ColdHoursCard({ horasAcumuladas, estadoFenologico, variedad }: P
         </div>
 
         <div className="flex items-center justify-between text-xs text-gray-500">
-          <span>{pct}% completado</span>
+          <span>{pct}% completed</span>
           {!metaCumplida && (
             <span className="text-amber-600 font-medium">
-              Faltan {UMBRALES.HORAS_FRIO_META - horasAcumuladas}h
+              Missing {UMBRALES.HORAS_FRIO_META - horasAcumuladas}h
             </span>
           )}
           {metaCumplida && (
-            <span className="text-green-600 font-medium">✓ Meta cumplida</span>
+            <span className="text-green-600 font-medium">✓ Target met</span>
           )}
         </div>
 
         <div className="text-xs text-gray-400 border-t pt-2">
-          Estado: {ESTADO_FENOLOGICO_LABELS[estadoFenologico]}
+          Stage: {ESTADO_FENOLOGICO_LABELS[estadoFenologico]}
         </div>
       </CardContent>
     </Card>

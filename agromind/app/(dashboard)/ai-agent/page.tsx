@@ -9,9 +9,9 @@ export default async function AiAgentPage() {
   return (
     <div className="max-w-4xl space-y-4">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Agente IA</h1>
+        <h1 className="text-2xl font-bold text-gray-900">AI Agent</h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          Agrónomo experto en cerezos — Región del Maule
+          Cherry expert agronomist — Maule Region
         </p>
       </div>
       <AiAgentClient />

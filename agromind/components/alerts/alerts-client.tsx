@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { enUS } from "date-fns/locale";
 import { CheckCheck, CheckCircle, Clock, Filter } from "lucide-react";
 import type { Alert } from "@prisma/client";
 import { ALERT_TYPE_LABELS } from "@/types";
@@ -84,7 +84,7 @@ export function AlertsClient({ alerts: initialAlerts, farmId }: Props) {
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               )}
             >
-              {f === "all" ? "Activas" : f === "unread" ? "Sin leer" : "Resueltas"}
+              {f === "all" ? "Active" : f === "unread" ? "Unread" : "Resolved"}
             </button>
           ))}
         </div>
@@ -97,7 +97,7 @@ export function AlertsClient({ alerts: initialAlerts, farmId }: Props) {
             className="text-xs"
           >
             <CheckCheck className="w-3.5 h-3.5 mr-1.5" />
-            Marcar todas como leídas
+            Mark all as read
           </Button>
         )}
       </div>
@@ -108,7 +108,7 @@ export function AlertsClient({ alerts: initialAlerts, farmId }: Props) {
       {filtered.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <CheckCircle className="w-10 h-10 mx-auto mb-3 text-gray-300" />
-          <p className="font-medium">Sin alertas en esta categoría</p>
+          <p className="font-medium">No alerts in this category</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -148,7 +148,7 @@ export function AlertsClient({ alerts: initialAlerts, farmId }: Props) {
                       </div>
                       <div className="flex items-center gap-1 text-xs text-gray-400 shrink-0">
                         <Clock className="w-3 h-3" />
-                        {format(alert.createdAt, "d MMM, HH:mm", { locale: es })}
+                        {format(alert.createdAt, "d MMM, HH:mm", { locale: enUS })}
                       </div>
                     </div>
 
@@ -156,14 +156,14 @@ export function AlertsClient({ alerts: initialAlerts, farmId }: Props) {
 
                     {alert.recommendation && (
                       <div className="mt-2 text-xs bg-white/80 border border-gray-200 rounded-md px-3 py-2">
-                        <span className="font-medium text-gray-500">Acción recomendada: </span>
+                        <span className="font-medium text-gray-500">Recommended action: </span>
                         <span className="text-gray-700">{alert.recommendation}</span>
                       </div>
                     )}
 
                     {alert.triggerValue && alert.triggerMetric && (
                       <div className="mt-2 text-xs text-gray-400">
-                        Valor disparador: {alert.triggerValue} ({alert.triggerMetric.replace(/_/g, " ")})
+                        Trigger value: {alert.triggerValue} ({alert.triggerMetric.replace(/_/g, " ")})
                       </div>
                     )}
 
@@ -175,14 +175,14 @@ export function AlertsClient({ alerts: initialAlerts, farmId }: Props) {
                             onClick={() => markRead(alert.id)}
                             className="text-xs text-gray-500 hover:text-gray-700 underline underline-offset-2"
                           >
-                            Marcar como leída
+                            Mark as read
                           </button>
                         )}
                         <button
                           onClick={() => markResolved(alert.id)}
                           className="text-xs text-green-600 hover:text-green-700 underline underline-offset-2"
                         >
-                          Marcar como resuelta
+                          Mark as resolved
                         </button>
                       </div>
                     )}
@@ -190,7 +190,7 @@ export function AlertsClient({ alerts: initialAlerts, farmId }: Props) {
                     {alert.isResolved && alert.resolvedAt && (
                       <div className="flex items-center gap-1 mt-2 text-xs text-green-600">
                         <CheckCircle className="w-3 h-3" />
-                        Resuelta el {format(alert.resolvedAt, "d MMM", { locale: es })}
+                        Resolved on {format(alert.resolvedAt, "d MMM", { locale: enUS })}
                       </div>
                     )}
                   </div>

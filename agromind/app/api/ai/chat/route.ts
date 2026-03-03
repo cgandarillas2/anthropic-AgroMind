@@ -19,10 +19,10 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Construir contexto agronómico del predio
+    // Build agronomic context for the farm
     const context = await buildAgronomicContext(userId);
 
-    // Inyectar contexto como primer mensaje del sistema (user turn)
+    // Inject context as first system message (user turn)
     const messagesWithContext = [
       {
         role: "user" as const,
@@ -54,8 +54,8 @@ export async function POST(req: NextRequest) {
         } catch (e: unknown) {
           const msg =
             e instanceof Error && e.message.includes("credit balance")
-              ? "❌ Sin créditos en la API de Anthropic. Ve a console.anthropic.com → Plans & Billing para recargar."
-              : "❌ Error al conectar con el agente. Verifica tu conexión y vuelve a intentarlo.";
+              ? "❌ No credits in Anthropic API. Go to console.anthropic.com → Plans & Billing to recharge."
+              : "❌ Error connecting to agent. Check your connection and try again.";
           controller.enqueue(encoder.encode(msg));
         } finally {
           controller.close();

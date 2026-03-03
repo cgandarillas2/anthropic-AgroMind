@@ -24,10 +24,10 @@ export function RiskBanners({ riesgos }: Props) {
     return (
       <Alert className="border-green-200 bg-green-50 text-green-800">
         <AlertTitle className="flex items-center gap-2">
-          <span>✅</span> Sin alertas climáticas activas
+          <span>✅</span> No active climate alerts
         </AlertTitle>
         <AlertDescription className="text-green-700 text-sm">
-          Las condiciones del pronóstico son favorables para el cultivo.
+          Forecast conditions are favorable for the crop.
         </AlertDescription>
       </Alert>
     );

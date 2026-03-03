@@ -37,13 +37,13 @@ export default async function LaborPage() {
   if (!userId) redirect("/sign-in");
 
   const data = await getData(userId);
-  if (!data) return <div className="text-gray-400 py-20 text-center">Sin predio registrado.</div>;
+  if (!data) return <div className="text-gray-400 py-20 text-center">No farm registered.</div>;
 
   return (
     <div className="max-w-5xl space-y-4">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Mano de obra</h1>
-        <p className="text-sm text-gray-500 mt-0.5">{data.farm.name} · Temporada activa</p>
+        <h1 className="text-2xl font-bold text-gray-900">Labor</h1>
+        <p className="text-sm text-gray-500 mt-0.5">{data.farm.name} · Active season</p>
       </div>
       <LaborClient records={data.records} cycles={data.cycles} />
     </div>

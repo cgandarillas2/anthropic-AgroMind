@@ -34,7 +34,7 @@ export function CurrentWeatherCard({ weather, farmName, commune }: Props) {
           <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
             <Droplets className="w-4 h-4 text-blue-200" />
             <div>
-              <div className="text-blue-100 text-xs">Humedad</div>
+              <div className="text-blue-100 text-xs">Humidity</div>
               <div className="font-semibold">{weather.humidity}%</div>
             </div>
           </div>
@@ -42,7 +42,7 @@ export function CurrentWeatherCard({ weather, farmName, commune }: Props) {
           <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
             <Wind className="w-4 h-4 text-blue-200" />
             <div>
-              <div className="text-blue-100 text-xs">Viento</div>
+              <div className="text-blue-100 text-xs">Wind</div>
               <div className="font-semibold">
                 {Math.round(weather.windSpeedKmh)} km/h {getWindDirection(weather.windDirection)}
               </div>
@@ -52,7 +52,7 @@ export function CurrentWeatherCard({ weather, farmName, commune }: Props) {
           <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
             <Eye className="w-4 h-4 text-blue-200" />
             <div>
-              <div className="text-blue-100 text-xs">Precipitación</div>
+              <div className="text-blue-100 text-xs">Precipitation</div>
               <div className="font-semibold">{weather.precipMm.toFixed(1)} mm</div>
             </div>
           </div>
@@ -60,7 +60,7 @@ export function CurrentWeatherCard({ weather, farmName, commune }: Props) {
           <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
             <Zap className="w-4 h-4 text-blue-200" />
             <div>
-              <div className="text-blue-100 text-xs">Radiación</div>
+              <div className="text-blue-100 text-xs">Radiation</div>
               <div className="font-semibold">{Math.round(weather.solarRadiation)} W/m²</div>
             </div>
           </div>

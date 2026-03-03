@@ -95,7 +95,7 @@ export function FarmsClient({ initialFarms }: FarmsClientProps) {
           totalArea: parseFloat(form.totalArea),
         }),
       });
-      if (!res.ok) throw new Error("Error al crear predio");
+      if (!res.ok) throw new Error("Error creating farm");
       const created = await res.json();
       setFarms((prev) => [{ ...created, lots: [], _count: { alerts: 0 } }, ...prev]);
       setForm(EMPTY_FORM);
@@ -109,7 +109,7 @@ export function FarmsClient({ initialFarms }: FarmsClientProps) {
   }
 
   async function handleDelete(farmId: string) {
-    if (!confirm("¿Eliminar este predio? Se borrarán todos sus lotes, cultivos y registros.")) return;
+    if (!confirm("Delete this farm? All its lots, crops and records will be deleted.")) return;
     setDeletingId(farmId);
     try {
       await fetch(`/api/farms/${farmId}`, { method: "DELETE" });
@@ -131,31 +131,31 @@ export function FarmsClient({ initialFarms }: FarmsClientProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-500">
-          {farms.length} {farms.length === 1 ? "predio registrado" : "predios registrados"}
+          {farms.length} {farms.length === 1 ? "farm registered" : "farms registered"}
         </p>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button size="sm" className="bg-green-600 hover:bg-green-700">
-              <Plus className="h-4 w-4 mr-1" /> Nuevo predio
+              <Plus className="h-4 w-4 mr-1" /> New Farm
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
-              <DialogTitle>Registrar predio</DialogTitle>
+              <DialogTitle>Register Farm</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleCreate} className="space-y-4 pt-2">
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2 space-y-1">
-                  <Label>Nombre del predio</Label>
+                  <Label>Farm Name</Label>
                   <Input
-                    placeholder="Fundo Los Cerezos"
+                    placeholder="Los Cerezos Farm"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     required
                   />
                 </div>
                 <div className="col-span-2 space-y-1">
-                  <Label>Dirección / Sector</Label>
+                  <Label>Address / Sector</Label>
                   <Input
                     placeholder="Camino Los Nogales s/n, sector Romeral"
                     value={form.address}
@@ -164,13 +164,13 @@ export function FarmsClient({ initialFarms }: FarmsClientProps) {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label>Región</Label>
+                  <Label>Region</Label>
                   <Select
                     value={form.region}
                     onValueChange={(v) => setForm({ ...form, region: v, commune: "" })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar..." />
+                      <SelectValue placeholder="Select..." />
                     </SelectTrigger>
                     <SelectContent>
                       {REGIONES.map((r) => (
@@ -180,14 +180,14 @@ export function FarmsClient({ initialFarms }: FarmsClientProps) {
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <Label>Comuna</Label>
+                  <Label>Commune</Label>
                   <Select
                     value={form.commune}
                     onValueChange={(v) => setForm({ ...form, commune: v })}
                     disabled={!form.region}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar..." />
+                      <SelectValue placeholder="Select..." />
                     </SelectTrigger>
                     <SelectContent>
                       {comunas.map((c) => (
@@ -197,7 +197,7 @@ export function FarmsClient({ initialFarms }: FarmsClientProps) {
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <Label>Latitud</Label>
+                  <Label>Latitude</Label>
                   <Input
                     type="number"
                     step="0.0001"
@@ -208,7 +208,7 @@ export function FarmsClient({ initialFarms }: FarmsClientProps) {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label>Longitud</Label>
+                  <Label>Longitude</Label>
                   <Input
                     type="number"
                     step="0.0001"
@@ -219,7 +219,7 @@ export function FarmsClient({ initialFarms }: FarmsClientProps) {
                   />
                 </div>
                 <div className="col-span-2 space-y-1">
-                  <Label>Superficie total (hectáreas)</Label>
+                  <Label>Total Area (hectares)</Label>
                   <Input
                     type="number"
                     step="0.1"
@@ -233,14 +233,14 @@ export function FarmsClient({ initialFarms }: FarmsClientProps) {
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-                  Cancelar
+                  Cancel
                 </Button>
                 <Button
                   type="submit"
                   disabled={saving || !form.region || !form.commune}
                   className="bg-green-600 hover:bg-green-700"
                 >
-                  {saving ? "Guardando..." : "Crear predio"}
+                  {saving ? "Saving..." : "Create Farm"}
                 </Button>
               </div>
             </form>
@@ -253,9 +253,9 @@ export function FarmsClient({ initialFarms }: FarmsClientProps) {
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <MapPin className="h-10 w-10 text-gray-300 mb-3" />
-            <p className="text-gray-500 font-medium">Sin predios registrados</p>
+            <p className="text-gray-500 font-medium">No farms registered</p>
             <p className="text-sm text-gray-400 mt-1">
-              Agrega tu primer predio para comenzar a gestionar tus cultivos.
+              Add your first farm to start managing your crops.
             </p>
           </CardContent>
         </Card>
@@ -293,11 +293,11 @@ export function FarmsClient({ initialFarms }: FarmsClientProps) {
                       {farm.totalArea} ha
                     </span>
                     <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                      {lotsCount} {lotsCount === 1 ? "lote" : "lotes"}
+                      {lotsCount} {lotsCount === 1 ? "lot" : "lots"}
                     </span>
                     {cycles > 0 && (
                       <Badge variant="secondary" className="text-xs h-5">
-                        {cycles} {cycles === 1 ? "ciclo activo" : "ciclos activos"}
+                        {cycles} {cycles === 1 ? "active cycle" : "active cycles"}
                       </Badge>
                     )}
                   </div>
@@ -313,7 +313,7 @@ export function FarmsClient({ initialFarms }: FarmsClientProps) {
                     href={`/farms/${farm.id}`}
                     className="flex items-center justify-between text-sm text-green-600 hover:text-green-700 font-medium pt-1 border-t"
                   >
-                    Ver detalles
+                    View Details
                     <ChevronRight className="h-4 w-4" />
                   </Link>
                 </CardContent>

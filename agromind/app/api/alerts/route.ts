@@ -47,7 +47,7 @@ export async function PATCH(req: NextRequest) {
       isResolved?: boolean;
     };
 
-    // Verificar propiedad
+    // Verify ownership
     const alert = await db.alert.findFirst({
       where: { id, farm: { owner: { clerkId: userId } } },
     });
@@ -71,7 +71,7 @@ export async function PATCH(req: NextRequest) {
   }
 }
 
-// PATCH /api/alerts/read-all — marcar todas como leídas
+// PATCH /api/alerts/read-all — mark all as read
 export async function PUT(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

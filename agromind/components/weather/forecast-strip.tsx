@@ -12,7 +12,7 @@ export function ForecastStrip({ forecast }: Props) {
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-semibold text-gray-700">
-          Pronóstico 7 días
+          7-day forecast
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -47,13 +47,13 @@ export function ForecastStrip({ forecast }: Props) {
                 {/* Indicadores de riesgo */}
                 <div className="flex gap-0.5 flex-wrap justify-center">
                   {day.riesgoHelada && (
-                    <span title="Riesgo helada" className="text-[10px]">🧊</span>
+                    <span title="Frost risk" className="text-[10px]">🧊</span>
                   )}
                   {day.riesgoLluvia && (
-                    <span title="Riesgo lluvia cosecha" className="text-[10px]">⚠️</span>
+                    <span title="Harvest rain risk" className="text-[10px]">⚠️</span>
                   )}
                   {day.riesgoCalor && (
-                    <span title="Golpe de calor" className="text-[10px]">🌡️</span>
+                    <span title="Heat stress" className="text-[10px]">🌡️</span>
                   )}
                 </div>
               </div>
@@ -64,7 +64,7 @@ export function ForecastStrip({ forecast }: Props) {
         {/* ET₀ resumen */}
         <div className="mt-3 pt-3 border-t border-gray-100">
           <div className="flex items-center justify-between text-xs text-gray-500">
-            <span>ET₀ acumulada 7 días</span>
+            <span>7-day accumulated ET₀</span>
             <span className="font-semibold text-gray-700">
               {forecast.slice(0, 7).reduce((s, d) => s + d.etMm, 0).toFixed(1)} mm
             </span>

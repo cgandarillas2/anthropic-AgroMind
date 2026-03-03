@@ -24,7 +24,7 @@ export default async function AlertsPage() {
   if (!farm) {
     return (
       <div className="text-center py-20 text-gray-400">
-        No hay predio registrado.
+        No farm registered.
       </div>
     );
   }
@@ -33,11 +33,11 @@ export default async function AlertsPage() {
     <div className="space-y-4 max-w-3xl">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Alertas</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Alerts</h1>
           <p className="text-sm text-gray-500 mt-0.5">{farm.name}</p>
         </div>
         <div className="text-sm text-gray-500">
-          {farm.alerts.filter((a) => !a.isRead).length} sin leer
+          {farm.alerts.filter((a) => !a.isRead).length} unread
         </div>
       </div>
       <AlertsClient alerts={farm.alerts} farmId={farm.id} />

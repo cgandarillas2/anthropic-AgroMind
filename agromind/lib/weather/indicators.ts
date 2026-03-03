@@ -1,26 +1,26 @@
 /**
- * Indicadores de riesgo agronómico para cerezos
- * Región del Maule — variedades Regina y Bing
+ * Agronomic risk indicators for cherry trees
+ * Maule Region — Regina and Bing varieties
  */
 
 import type { ForecastDay } from "./open-meteo";
 import type { EstadoFenologico } from "@prisma/client";
 
-// ─── Umbrales críticos para cerezos ────────────────────────────────────────
+// ─── Critical thresholds for cherry trees ──────────────────────────────────
 
 export const UMBRALES = {
-  HELADA_CRITICA:     -1,   // °C — daño irreversible en floración
-  HELADA_LEVE:         2,   // °C — advertencia
-  LLUVIA_RIESGO:       1,   // mm — raja el fruto en cosecha
-  CALOR_CRITICO:      35,   // °C — reduce calibre en llenado
-  CALOR_ADVERTENCIA:  32,   // °C — estrés moderado
-  HORAS_FRIO_META:   800,   // h < 7°C — requerimiento de dormancia
-  HORAS_FRIO_MINIMO: 700,   // h — mínimo para brotamiento normal
+  HELADA_CRITICA:     -1,   // °C — irreversible damage during flowering
+  HELADA_LEVE:         2,   // °C — warning
+  LLUVIA_RIESGO:       1,   // mm — splits fruit at harvest
+  CALOR_CRITICO:      35,   // °C — reduces caliber during filling
+  CALOR_ADVERTENCIA:  32,   // °C — moderate stress
+  HORAS_FRIO_META:   800,   // h < 7°C — dormancy requirement
+  HORAS_FRIO_MINIMO: 700,   // h — minimum for normal budbreak
   VIENTO_FUERTE:      60,   // km/h
-  HUMEDAD_ALTA:       90,   // % — riesgo de hongos (botrytis)
+  HUMEDAD_ALTA:       90,   // % — fungal risk (botrytis)
 } as const;
 
-// ─── Tipos de alerta detectada ─────────────────────────────────────────────
+// ─── Detected alert types ──────────────────────────────────────────────────
 
 export interface RiesgoDetectado {
   tipo: "HELADA" | "LLUVIA_COSECHA" | "GOLPE_CALOR" | "VIENTO_FUERTE" | "HUMEDAD_ALTA" | "DEFICIT_HORAS_FRIO";
@@ -28,11 +28,11 @@ export interface RiesgoDetectado {
   titulo: string;
   descripcion: string;
   recomendacion: string;
-  fechas: string[];  // días afectados
+  fechas: string[];  // affected days
   valorTrigger: number;
 }
 
-// ─── Motor de detección de riesgos ─────────────────────────────────────────
+// ─── Risk detection engine ─────────────────────────────────────────────────
 
 export function detectarRiesgos(
   forecast: ForecastDay[],
@@ -42,7 +42,7 @@ export function detectarRiesgos(
 ): RiesgoDetectado[] {
   const riesgos: RiesgoDetectado[] = [];
 
-  // 1. HELADA — solo crítica en floración y cuaja
+  // 1. FROST — only critical during flowering and fruit set
   const esEstadoSensibleHelada =
     estadoFenologico === "FLORACION" || estadoFenologico === "CUAJA";
 
@@ -52,10 +52,10 @@ export function detectarRiesgos(
     riesgos.push({
       tipo: "HELADA",
       severidad: "CRITICA",
-      titulo: `Helada pronosticada — ${diasHelada.length} día(s)`,
-      descripcion: `Temperatura mínima de ${minTemp.toFixed(1)}°C. En estado de ${estadoFenologico.toLowerCase().replace("_", " ")}, las heladas causan daño irreversible al pistilo.`,
+      titulo: `Frost forecast — ${diasHelada.length} day(s)`,
+      descripcion: `Minimum temperature of ${minTemp.toFixed(1)}°C. At ${estadoFenologico.toLowerCase().replace("_", " ")} stage, frost causes irreversible damage to the pistil.`,
       recomendacion:
-        "Activar sistema de aspersión antipélada nocturna. Monitorear temperatura cada hora desde las 22:00h. Considerar calefactores de parafina si temp < -2°C.",
+        "Activate nighttime anti-frost sprinkler system. Monitor temperature hourly from 10:00 PM. Consider paraffin heaters if temp < -2°C.",
       fechas: diasHelada.map((d) => d.date),
       valorTrigger: minTemp,
     });
@@ -64,15 +64,15 @@ export function detectarRiesgos(
     riesgos.push({
       tipo: "HELADA",
       severidad: "INFO",
-      titulo: `Temperatura baja pronosticada`,
-      descripcion: `Mínima de ${minTemp.toFixed(1)}°C. No crítica en el estado fenológico actual (${estadoFenologico}).`,
-      recomendacion: "Monitorear. Sin acción inmediata requerida.",
+      titulo: `Low temperature forecast`,
+      descripcion: `Minimum of ${minTemp.toFixed(1)}°C. Not critical at current phenological stage (${estadoFenologico}).`,
+      recomendacion: "Monitor. No immediate action required.",
       fechas: diasHelada.map((d) => d.date),
       valorTrigger: minTemp,
     });
   }
 
-  // 2. LLUVIA EN COSECHA — crítica en madurez y llenado de fruto
+  // 2. RAIN AT HARVEST — critical during ripening and fruit filling
   const esEstadoSensibleLluvia =
     estadoFenologico === "MADUREZ" ||
     estadoFenologico === "LLENADO_FRUTO" ||
@@ -85,18 +85,18 @@ export function detectarRiesgos(
     riesgos.push({
       tipo: "LLUVIA_COSECHA",
       severidad,
-      titulo: `Lluvia en período crítico — ${diasLluvia.length} día(s)`,
-      descripcion: `${maxPrecip.toFixed(1)} mm máximo pronosticado. En ${estadoFenologico === "MADUREZ" ? "cosecha" : "llenado de fruto"}, la lluvia raja el epicarpio y reduce el porcentaje exportable.`,
+      titulo: `Rain during critical period — ${diasLluvia.length} day(s)`,
+      descripcion: `${maxPrecip.toFixed(1)} mm maximum forecast. During ${estadoFenologico === "MADUREZ" ? "harvest" : "fruit filling"}, rain splits the epicarp and reduces exportable percentage.`,
       recomendacion:
         estadoFenologico === "MADUREZ"
-          ? "URGENTE: Adelantar cosecha si Brix ≥ 16 y color ≥ 80%. Aplicar calcio foliar (CaCl₂ 0.5%) antes de la lluvia. Revisar malla antiluvia."
-          : "Revisar malla antiluvia y asegurar drenaje de suelo. Aplicar calcio foliar preventivo. Suspender riego 48h antes.",
+          ? "URGENT: Advance harvest if Brix ≥ 16 and color ≥ 80%. Apply foliar calcium (CaCl₂ 0.5%) before rain. Check rain cover."
+          : "Check rain cover and ensure soil drainage. Apply preventive foliar calcium. Suspend irrigation 48h before.",
       fechas: diasLluvia.map((d) => d.date),
       valorTrigger: maxPrecip,
     });
   }
 
-  // 3. GOLPE DE CALOR — crítico en llenado y madurez
+  // 3. HEAT STRESS — critical during filling and ripening
   const esEstadoSensibleCalor =
     estadoFenologico === "LLENADO_FRUTO" ||
     estadoFenologico === "MADUREZ" ||
@@ -108,47 +108,47 @@ export function detectarRiesgos(
     riesgos.push({
       tipo: "GOLPE_CALOR",
       severidad: maxTemp > 38 ? "CRITICA" : "ADVERTENCIA",
-      titulo: `Golpe de calor — ${maxTemp.toFixed(1)}°C`,
-      descripcion: `${diasCalor.length} día(s) sobre 35°C. En llenado de fruto, cada grado sobre 35°C reduce el calibre final en ~0.3mm y acelera la maduración.`,
+      titulo: `Heat stress — ${maxTemp.toFixed(1)}°C`,
+      descripcion: `${diasCalor.length} day(s) above 35°C. During fruit filling, each degree above 35°C reduces final caliber by ~0.3mm and accelerates ripening.`,
       recomendacion:
-        "Aplicar kaolín (Surround WP) 25 kg/ha. Activar microaspersión sobre copa 12:00-17:00h (3 ciclos de 10 min). Monitorear temperatura bajo dosel.",
+        "Apply kaolin (Surround WP) 25 kg/ha. Activate micro-sprinklers over canopy 12:00-5:00 PM (3 cycles of 10 min). Monitor temperature under canopy.",
       fechas: diasCalor.map((d) => d.date),
       valorTrigger: maxTemp,
     });
   }
 
-  // 4. VIENTO FUERTE
+  // 4. STRONG WIND
   const diasViento = forecast.filter((d) => d.windSpeedMaxKmh > UMBRALES.VIENTO_FUERTE);
   if (diasViento.length > 0) {
     const maxViento = Math.max(...diasViento.map((d) => d.windSpeedMaxKmh));
     riesgos.push({
       tipo: "VIENTO_FUERTE",
       severidad: maxViento > 80 ? "CRITICA" : "ADVERTENCIA",
-      titulo: `Viento fuerte — ${maxViento.toFixed(0)} km/h`,
-      descripcion: `Viento sobre ${UMBRALES.VIENTO_FUERTE} km/h puede dañar mallas, defoliar ramas y dificultar aplicaciones fitosanitarias.`,
+      titulo: `Strong wind — ${maxViento.toFixed(0)} km/h`,
+      descripcion: `Wind above ${UMBRALES.VIENTO_FUERTE} km/h can damage netting, defoliate branches, and hinder phytosanitary applications.`,
       recomendacion:
-        "Revisar y asegurar mallas y estructuras. Suspender aplicaciones con mochila o tractor. Verificar estado de tutores.",
+        "Inspect and secure netting and structures. Suspend backpack or tractor applications. Check condition of stakes.",
       fechas: diasViento.map((d) => d.date),
       valorTrigger: maxViento,
     });
   }
 
-  // 5. HUMEDAD ALTA (si se pasa el valor actual)
+  // 5. HIGH HUMIDITY (if current value is passed)
   if (humidadActual && humidadActual > UMBRALES.HUMEDAD_ALTA) {
     riesgos.push({
       tipo: "HUMEDAD_ALTA",
       severidad: "ADVERTENCIA",
-      titulo: `Humedad relativa alta — ${humidadActual}%`,
+      titulo: `High relative humidity — ${humidadActual}%`,
       descripcion:
-        "Humedad sobre 90% favorece el desarrollo de Botrytis cinerea (pudrición gris), especialmente en frutos próximos a cosecha.",
+        "Humidity above 90% favors development of Botrytis cinerea (gray mold), especially on fruit close to harvest.",
       recomendacion:
-        "Aplicar fungicida preventivo (Fludioxonil o Iprodione). Mejorar ventilación en zonas con follaje denso. Evitar riego nocturno.",
+        "Apply preventive fungicide (Fludioxonil or Iprodione). Improve ventilation in areas with dense foliage. Avoid nighttime irrigation.",
       fechas: [new Date().toISOString().split("T")[0]],
       valorTrigger: humidadActual,
     });
   }
 
-  // 6. DÉFICIT DE HORAS FRÍO — relevante solo en brotamiento
+  // 6. CHILL HOURS DEFICIT — relevant only during budbreak
   if (
     estadoFenologico === "BROTAMIENTO" &&
     horasFrioAcumuladas < UMBRALES.HORAS_FRIO_MINIMO
@@ -157,10 +157,10 @@ export function detectarRiesgos(
     riesgos.push({
       tipo: "DEFICIT_HORAS_FRIO",
       severidad: horasFrioAcumuladas < 600 ? "CRITICA" : "ADVERTENCIA",
-      titulo: `Déficit de horas frío — ${horasFrioAcumuladas}h acumuladas`,
-      descripcion: `Meta: ${UMBRALES.HORAS_FRIO_META}h. Faltan ${deficit}h. El déficit causa brotamiento irregular, floraciones escalonadas y menor rendimiento.`,
+      titulo: `Chill hours deficit — ${horasFrioAcumuladas}h accumulated`,
+      descripcion: `Target: ${UMBRALES.HORAS_FRIO_META}h. Missing ${deficit}h. The deficit causes irregular budbreak, staggered flowering and lower yield.`,
       recomendacion:
-        "Evaluar aplicación de cianamida hidrogenada (Dormex 2%) para compensar déficit. Consultar con agrónomo especialista en fisiología frutal.",
+        "Evaluate application of hydrogen cyanamide (Dormex 2%) to compensate deficit. Consult with fruit physiology specialist agronomist.",
       fechas: [],
       valorTrigger: horasFrioAcumuladas,
     });
@@ -169,10 +169,10 @@ export function detectarRiesgos(
   return riesgos;
 }
 
-// ─── Helpers de visualización ──────────────────────────────────────────────
+// ─── Visualization helpers ─────────────────────────────────────────────────
 
 export function getWindDirection(degrees: number): string {
-  const dirs = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"];
+  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
   return dirs[Math.round(degrees / 45) % 8];
 }
 
@@ -188,5 +188,5 @@ export function getHorasFrioPct(horas: number): number {
 
 export function formatFechaCorta(isoDate: string): string {
   const d = new Date(isoDate + "T12:00:00");
-  return d.toLocaleDateString("es-CL", { weekday: "short", day: "numeric", month: "short" });
+  return d.toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short" });
 }

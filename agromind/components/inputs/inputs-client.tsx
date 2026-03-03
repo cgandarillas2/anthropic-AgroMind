@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Trash2, Plus, FlaskConical } from "lucide-react";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { enUS } from "date-fns/locale";
 import { useRouter } from "next/navigation";
 import type { Input as InputRecord, ProductionCycle, Crop, Lot } from "@prisma/client";
 import { INPUT_CATEGORY_LABELS } from "@/types";
@@ -94,11 +94,11 @@ export function InputsClient({ inputs: initial, cycles }: Props) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="col-span-2 md:col-span-1 bg-emerald-50 border-emerald-200">
           <CardContent className="pt-4 pb-3">
-            <div className="text-xs text-emerald-600 font-medium">Total insumos</div>
+            <div className="text-xs text-emerald-600 font-medium">Total inputs</div>
             <div className="text-2xl font-bold text-emerald-800 mt-1">
               ${(totalCost / 1_000_000).toFixed(3)}M
             </div>
-            <div className="text-xs text-emerald-500">{inputs.length} registros</div>
+            <div className="text-xs text-emerald-500">{inputs.length} records</div>
           </CardContent>
         </Card>
         {Object.entries(byCat)
@@ -114,7 +114,7 @@ export function InputsClient({ inputs: initial, cycles }: Props) {
                   ${(cost / 1000).toFixed(0)}k
                 </div>
                 <div className="text-xs text-gray-400">
-                  {((cost / totalCost) * 100).toFixed(0)}% del total
+                  {((cost / totalCost) * 100).toFixed(0)}% of total
                 </div>
               </CardContent>
             </Card>
@@ -125,10 +125,10 @@ export function InputsClient({ inputs: initial, cycles }: Props) {
       <Card>
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-            <FlaskConical className="w-4 h-4" /> Registros de insumos
+            <FlaskConical className="w-4 h-4" /> Input records
           </CardTitle>
           <Button size="sm" onClick={() => setOpen(true)}>
-            <Plus className="w-4 h-4 mr-1.5" /> Agregar
+            <Plus className="w-4 h-4 mr-1.5" /> Add
           </Button>
         </CardHeader>
         <CardContent>
@@ -136,12 +136,12 @@ export function InputsClient({ inputs: initial, cycles }: Props) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-xs text-gray-400 border-b">
-                  <th className="text-left pb-2 font-medium">Fecha</th>
-                  <th className="text-left pb-2 font-medium">Producto</th>
-                  <th className="text-left pb-2 font-medium">Categoría</th>
-                  <th className="text-left pb-2 font-medium">Lote</th>
-                  <th className="text-right pb-2 font-medium">Cantidad</th>
-                  <th className="text-right pb-2 font-medium">Costo total</th>
+                  <th className="text-left pb-2 font-medium">Date</th>
+                  <th className="text-left pb-2 font-medium">Product</th>
+                  <th className="text-left pb-2 font-medium">Category</th>
+                  <th className="text-left pb-2 font-medium">Lot</th>
+                  <th className="text-right pb-2 font-medium">Quantity</th>
+                  <th className="text-right pb-2 font-medium">Total cost</th>
                   <th className="pb-2"></th>
                 </tr>
               </thead>
@@ -149,7 +149,7 @@ export function InputsClient({ inputs: initial, cycles }: Props) {
                 {inputs.length === 0 && (
                   <tr>
                     <td colSpan={7} className="text-center py-10 text-gray-400">
-                      Sin registros. Agrega el primer insumo.
+                      No records. Add the first input.
                     </td>
                   </tr>
                 )}
@@ -158,7 +158,7 @@ export function InputsClient({ inputs: initial, cycles }: Props) {
                   return (
                     <tr key={inp.id} className="hover:bg-gray-50">
                       <td className="py-2 text-gray-500 text-xs">
-                        {format(inp.date, "d MMM", { locale: es })}
+                        {format(inp.date, "d MMM", { locale: enUS })}
                       </td>
                       <td className="py-2">
                         <div className="font-medium text-gray-800">{inp.name}</div>
@@ -210,12 +210,12 @@ export function InputsClient({ inputs: initial, cycles }: Props) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Registrar insumo</DialogTitle>
+            <DialogTitle>Register input</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs">Ciclo / Lote</Label>
+                <Label className="text-xs">Cycle / Lot</Label>
                 <Select value={form.productionCycleId} onValueChange={(v) => setForm((f) => ({ ...f, productionCycleId: v }))}>
                   <SelectTrigger className="mt-1 h-8 text-sm">
                     <SelectValue />
@@ -230,14 +230,14 @@ export function InputsClient({ inputs: initial, cycles }: Props) {
                 </Select>
               </div>
               <div>
-                <Label className="text-xs">Fecha</Label>
+                <Label className="text-xs">Date</Label>
                 <Input type="date" className="mt-1 h-8 text-sm" value={form.date}
                   onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
               </div>
             </div>
 
             <div>
-              <Label className="text-xs">Categoría</Label>
+              <Label className="text-xs">Category</Label>
               <Select value={form.category} onValueChange={(v) => setForm((f) => ({ ...f, category: v }))}>
                 <SelectTrigger className="mt-1 h-8 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -249,19 +249,19 @@ export function InputsClient({ inputs: initial, cycles }: Props) {
             </div>
 
             <div>
-              <Label className="text-xs">Nombre del producto</Label>
-              <Input className="mt-1 h-8 text-sm" placeholder="Ej: Nitrato de potasio"
+              <Label className="text-xs">Product name</Label>
+              <Input className="mt-1 h-8 text-sm" placeholder="E.g.: Potassium nitrate"
                 value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
             </div>
 
             <div className="grid grid-cols-3 gap-3">
               <div className="col-span-2">
-                <Label className="text-xs">Cantidad</Label>
+                <Label className="text-xs">Quantity</Label>
                 <Input type="number" className="mt-1 h-8 text-sm" placeholder="0"
                   value={form.quantity} onChange={(e) => setForm((f) => ({ ...f, quantity: e.target.value }))} />
               </div>
               <div>
-                <Label className="text-xs">Unidad</Label>
+                <Label className="text-xs">Unit</Label>
                 <Select value={form.unit} onValueChange={(v) => setForm((f) => ({ ...f, unit: v }))}>
                   <SelectTrigger className="mt-1 h-8 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -274,7 +274,7 @@ export function InputsClient({ inputs: initial, cycles }: Props) {
             </div>
 
             <div>
-              <Label className="text-xs">Costo por unidad (CLP)</Label>
+              <Label className="text-xs">Cost per unit (CLP)</Label>
               <Input type="number" className="mt-1 h-8 text-sm" placeholder="0"
                 value={form.costPerUnit} onChange={(e) => setForm((f) => ({ ...f, costPerUnit: e.target.value }))} />
               {form.quantity && form.costPerUnit && (
@@ -285,15 +285,15 @@ export function InputsClient({ inputs: initial, cycles }: Props) {
             </div>
 
             <div>
-              <Label className="text-xs">Proveedor (opcional)</Label>
-              <Input className="mt-1 h-8 text-sm" placeholder="Ej: Anasac"
+              <Label className="text-xs">Supplier (optional)</Label>
+              <Input className="mt-1 h-8 text-sm" placeholder="E.g.: Anasac"
                 value={form.supplier} onChange={(e) => setForm((f) => ({ ...f, supplier: e.target.value }))} />
             </div>
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" size="sm" onClick={() => setOpen(false)}>Cancelar</Button>
+            <Button variant="outline" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
             <Button size="sm" onClick={handleAdd} disabled={loading || !form.name}>
-              {loading ? "Guardando..." : "Guardar"}
+              {loading ? "Saving..." : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>

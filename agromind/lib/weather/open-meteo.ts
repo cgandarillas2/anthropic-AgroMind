@@ -1,43 +1,43 @@
 /**
- * Cliente Open-Meteo — sin API key, gratuito
- * Documentación: https://open-meteo.com/en/docs
+ * Open-Meteo Client — no API key, free
+ * Documentation: https://open-meteo.com/en/docs
  */
 
 const BASE_URL = "https://api.open-meteo.com/v1";
 
-// ─── WMO Weather Codes → descripción + emoji ───────────────────────────────
+// ─── WMO Weather Codes → description + emoji ───────────────────────────────
 export const WMO_CODES: Record<number, { label: string; emoji: string }> = {
-  0:  { label: "Despejado",          emoji: "☀️"  },
-  1:  { label: "Mayormente despejado", emoji: "🌤️" },
-  2:  { label: "Parcialmente nublado", emoji: "⛅" },
-  3:  { label: "Nublado",             emoji: "☁️"  },
-  45: { label: "Niebla",              emoji: "🌫️" },
-  48: { label: "Niebla helada",       emoji: "🌫️" },
-  51: { label: "Llovizna leve",       emoji: "🌦️" },
-  53: { label: "Llovizna moderada",   emoji: "🌦️" },
-  55: { label: "Llovizna intensa",    emoji: "🌧️" },
-  61: { label: "Lluvia leve",         emoji: "🌧️" },
-  63: { label: "Lluvia moderada",     emoji: "🌧️" },
-  65: { label: "Lluvia intensa",      emoji: "🌧️" },
-  71: { label: "Nevada leve",         emoji: "🌨️" },
-  73: { label: "Nevada moderada",     emoji: "🌨️" },
-  75: { label: "Nevada intensa",      emoji: "❄️"  },
-  77: { label: "Granizo",             emoji: "🌨️" },
-  80: { label: "Chubascos leves",     emoji: "🌦️" },
-  81: { label: "Chubascos moderados", emoji: "🌧️" },
-  82: { label: "Chubascos intensos",  emoji: "⛈️" },
-  85: { label: "Chubascos de nieve",  emoji: "🌨️" },
-  86: { label: "Chubascos de nieve",  emoji: "❄️"  },
-  95: { label: "Tormenta",            emoji: "⛈️" },
-  96: { label: "Tormenta con granizo", emoji: "⛈️" },
-  99: { label: "Tormenta fuerte",     emoji: "⛈️" },
+  0:  { label: "Clear",          emoji: "☀️"  },
+  1:  { label: "Mostly clear", emoji: "🌤️" },
+  2:  { label: "Partly cloudy", emoji: "⛅" },
+  3:  { label: "Cloudy",             emoji: "☁️"  },
+  45: { label: "Fog",              emoji: "🌫️" },
+  48: { label: "Freezing fog",       emoji: "🌫️" },
+  51: { label: "Light drizzle",       emoji: "🌦️" },
+  53: { label: "Moderate drizzle",   emoji: "🌦️" },
+  55: { label: "Heavy drizzle",    emoji: "🌧️" },
+  61: { label: "Light rain",         emoji: "🌧️" },
+  63: { label: "Moderate rain",     emoji: "🌧️" },
+  65: { label: "Heavy rain",      emoji: "🌧️" },
+  71: { label: "Light snow",         emoji: "🌨️" },
+  73: { label: "Moderate snow",     emoji: "🌨️" },
+  75: { label: "Heavy snow",      emoji: "❄️"  },
+  77: { label: "Hail",             emoji: "🌨️" },
+  80: { label: "Light showers",     emoji: "🌦️" },
+  81: { label: "Moderate showers", emoji: "🌧️" },
+  82: { label: "Heavy showers",  emoji: "⛈️" },
+  85: { label: "Snow showers",  emoji: "🌨️" },
+  86: { label: "Snow showers",  emoji: "❄️"  },
+  95: { label: "Thunderstorm",            emoji: "⛈️" },
+  96: { label: "Thunderstorm with hail", emoji: "⛈️" },
+  99: { label: "Severe thunderstorm",     emoji: "⛈️" },
 };
 
 export function getWeatherInfo(code: number) {
-  return WMO_CODES[code] ?? { label: "Desconocido", emoji: "🌡️" };
+  return WMO_CODES[code] ?? { label: "Unknown", emoji: "🌡️" };
 }
 
-// ─── Tipos de respuesta Open-Meteo ─────────────────────────────────────────
+// ─── Open-Meteo response types ─────────────────────────────────────────
 
 interface OpenMeteoCurrentResponse {
   temperature_2m: number;
@@ -66,7 +66,7 @@ interface OpenMeteoHourlyResponse {
   temperature_2m: number[];
 }
 
-// ─── Tipos normalizados para la app ────────────────────────────────────────
+// ─── Normalized types for the app ────────────────────────────────────────────
 
 export interface CurrentWeather {
   tempC: number;
@@ -88,20 +88,20 @@ export interface ForecastDay {
   windSpeedMaxKmh: number;
   etMm: number;
   weatherCode: number;
-  // Indicadores calculados para cerezos
+  // Calculated indicators for cherries
   riesgoHelada: boolean;  // tMin < -1°C
-  riesgoLluvia: boolean;  // precipMm > 1 en período crítico
+  riesgoLluvia: boolean;  // precipMm > 1 during critical period
   riesgoCalor: boolean;   // tMax > 35°C
 }
 
 export interface WeatherData {
   current: CurrentWeather;
   forecast: ForecastDay[];
-  /** Horas en que temp < 7°C en las últimas 24h (para sumar a acumulado) */
+  /** Hours when temp < 7°C in the last 24h (to add to accumulated) */
   horasFrioHoy: number;
 }
 
-// ─── Función principal ──────────────────────────────────────────────────────
+// ─── Main function ────────────────────────────────────────────────────────
 
 export async function fetchWeather(
   latitude: number,
@@ -132,7 +132,7 @@ export async function fetchWeather(
     hourly: "temperature_2m",
     timezone: "America/Santiago",
     forecast_days: "7",
-    past_days: "1",  // incluye ayer para calcular horas frío de las últimas 24h
+    past_days: "1",  // includes yesterday to calculate chill hours from last 24h
   });
 
   const res = await fetch(`${BASE_URL}/forecast?${params}`, {
@@ -149,18 +149,18 @@ export async function fetchWeather(
   const daily = data.daily as OpenMeteoDailyResponse;
   const hourly = data.hourly as OpenMeteoHourlyResponse;
 
-  // Calcular horas frío en las últimas 24h
+  // Calculate chill hours in the last 24h
   const now = new Date();
-  const hace24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const horasFrioHoy = hourly.time.reduce((count, timeStr, i) => {
     const t = new Date(timeStr);
-    if (t >= hace24h && t <= now && hourly.temperature_2m[i] < 7) {
+    if (t >= last24h && t <= now && hourly.temperature_2m[i] < 7) {
       return count + 1;
     }
     return count;
   }, 0);
 
-  // Normalizar forecast (omitir el día pasado, solo los próximos 7)
+  // Normalize forecast (skip the past day, only next 7)
   const today = new Date().toISOString().split("T")[0];
   const forecast: ForecastDay[] = daily.time
     .map((date, i) => ({
@@ -172,7 +172,7 @@ export async function fetchWeather(
       windSpeedMaxKmh: daily.wind_speed_10m_max[i],
       etMm: daily.et0_fao_evapotranspiration[i],
       weatherCode: daily.weather_code[i],
-      // Riesgos para cerezos — contexto enero (cosecha)
+      // Risks for cherries — January context (harvest)
       riesgoHelada: daily.temperature_2m_min[i] < -1,
       riesgoLluvia: daily.precipitation_sum[i] > 1,
       riesgoCalor: daily.temperature_2m_max[i] > 35,

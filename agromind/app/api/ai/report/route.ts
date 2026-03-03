@@ -46,8 +46,8 @@ export async function POST(req: NextRequest) {
         } catch (e: unknown) {
           const msg =
             e instanceof Error && e.message.includes("credit balance")
-              ? "❌ Sin créditos en la API de Anthropic. Ve a console.anthropic.com → Plans & Billing para recargar."
-              : "❌ Error al generar el reporte. Verifica tu conexión y vuelve a intentarlo.";
+              ? "❌ No credits in Anthropic API. Go to console.anthropic.com → Plans & Billing to recharge."
+              : "❌ Error generating report. Check your connection and try again.";
           controller.enqueue(encoder.encode(msg));
         } finally {
           controller.close();

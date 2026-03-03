@@ -1,11 +1,11 @@
 /**
  * AgroMind - Seed Script
  *
- * Datos de prueba: Predio cerealero en Curicó, Región del Maule.
- * 2 lotes de 5 ha c/u, variedad Regina, ciclo activo en estado
- * "CUAJA" (fruto cuajado), con registros de las últimas 3 semanas.
+ * Test data: Cherry farm in Curicó, Maule Region.
+ * 2 lots of 5 ha each, Regina variety, active cycle in
+ * "CUAJA" (fruit set) stage, with records from the last 3 weeks.
  *
- * Fecha de referencia del seed: 2025-01-04 (temporada 2024/2025)
+ * Seed reference date: 2025-01-04 (2024/2025 season)
  */
 
 import * as dotenv from "dotenv";
@@ -27,16 +27,16 @@ import {
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
 
-// ─── Fechas base (3 semanas atrás desde 2025-01-04) ───
+// ─── Base dates (3 weeks ago from 2025-01-04) ───
 const BASE_DATE = new Date("2025-01-04T12:00:00-03:00");
 const daysAgo = (d: number) =>
   new Date(BASE_DATE.getTime() - d * 24 * 60 * 60 * 1000);
 
 async function main() {
-  console.log("🌱 Iniciando seed de AgroMind...\n");
+  console.log("🌱 Starting AgroMind seed...\n");
 
   // ─────────────────────────────────────────────
-  // 1. USUARIO PROPIETARIO
+  // 1. OWNER USER
   // ─────────────────────────────────────────────
   const user = await prisma.user.upsert({
     where: { clerkId: "seed_user_curico_001" },
@@ -48,11 +48,11 @@ async function main() {
       role: UserRole.FARMER,
     },
   });
-  console.log(`✅ Usuario creado: ${user.name}`);
+  console.log(`✅ User created: ${user.name}`);
 
   // ─────────────────────────────────────────────
-  // 2. PREDIO - Fundo Los Ciruelos, Curicó
-  //    Coordenadas reales: sur de Curicó (~34.97°S, 71.23°W)
+  // 2. FARM - Fundo Los Ciruelos, Curicó
+  //    Real coordinates: south of Curicó (~34.97°S, 71.23°W)
   // ─────────────────────────────────────────────
   const farm = await prisma.farm.upsert({
     where: { id: "farm_curico_001" },
@@ -65,23 +65,23 @@ async function main() {
       commune: "Curicó",
       latitude: -34.9756,
       longitude: -71.2384,
-      totalArea: 12.5, // 10 ha cerezos + 2.5 ha infraestructura/cortinas
+      totalArea: 12.5, // 10 ha cherries + 2.5 ha infrastructure/windbreaks
       ownerId: user.id,
     },
   });
-  console.log(`✅ Predio creado: ${farm.name} (${farm.commune})`);
+  console.log(`✅ Farm created: ${farm.name} (${farm.commune})`);
 
   // ─────────────────────────────────────────────
-  // 3. LOTES
+  // 3. LOTS
   // ─────────────────────────────────────────────
   const lotA = await prisma.lot.upsert({
     where: { id: "lot_curico_A" },
     update: {},
     create: {
       id: "lot_curico_A",
-      name: "Lote A - Sector Norte",
+      name: "Lot A - North Sector",
       area: 5.0,
-      soilType: "Franco arcillo-limoso",
+      soilType: "Clayey silty loam",
       slopePerc: 3.5,
       farmId: farm.id,
     },
@@ -92,29 +92,29 @@ async function main() {
     update: {},
     create: {
       id: "lot_curico_B",
-      name: "Lote B - Sector Sur",
+      name: "Lot B - South Sector",
       area: 5.0,
-      soilType: "Franco arenoso",
+      soilType: "Sandy loam",
       slopePerc: 2.0,
       farmId: farm.id,
     },
   });
-  console.log(`✅ Lotes creados: ${lotA.name} y ${lotB.name}`);
+  console.log(`✅ Lots created: ${lotA.name} and ${lotB.name}`);
 
   // ─────────────────────────────────────────────
-  // 4. CULTIVOS
-  //    Lote A: Regina (variedad tardía, mejor calibre, export premium)
-  //    Lote B: Bing (variedad temprana, mercado local + export)
+  // 4. CROPS
+  //    Lot A: Regina (late variety, better caliber, premium export)
+  //    Lot B: Bing (early variety, local market + export)
   // ─────────────────────────────────────────────
   const cropA = await prisma.crop.upsert({
     where: { id: "crop_curico_A_regina" },
     update: {},
     create: {
       id: "crop_curico_A_regina",
-      species: "Cerezo",
+      species: "Cherry",
       variety: "Regina",
       plantYear: 2015,
-      density: 833, // 4m x 3m → ~833 plantas/ha
+      density: 833, // 4m x 3m → ~833 plants/ha
       rootstock: "Colt",
       lotId: lotA.id,
     },
@@ -125,23 +125,23 @@ async function main() {
     update: {},
     create: {
       id: "crop_curico_B_bing",
-      species: "Cerezo",
+      species: "Cherry",
       variety: "Bing",
       plantYear: 2013,
-      density: 667, // 5m x 3m → ~667 plantas/ha (plantas más grandes, más antiguas)
+      density: 667, // 5m x 3m → ~667 plants/ha (larger, older plants)
       rootstock: "Mahaleb",
       lotId: lotB.id,
     },
   });
   console.log(
-    `✅ Cultivos: Regina (Lote A, plantado ${cropA.plantYear}) | Bing (Lote B, plantado ${cropB.plantYear})`
+    `✅ Crops: Regina (Lot A, planted ${cropA.plantYear}) | Bing (Lot B, planted ${cropB.plantYear})`
   );
 
   // ─────────────────────────────────────────────
-  // 5. CICLOS PRODUCTIVOS ACTIVOS (temporada 2024/2025)
-  //    Estado: CUAJA → fruto cuajado, pasando a llenado
-  //    Horas frío: Regina acumuló 847h (meta cumplida)
-  //    Calibre estimado: 28-30mm (export JJ/J)
+  // 5. ACTIVE PRODUCTION CYCLES (2024/2025 season)
+  //    Stage: CUAJA → fruit set, moving to filling
+  //    Chill hours: Regina accumulated 847h (target met)
+  //    Estimated caliber: 28-30mm (export JJ/J)
   // ─────────────────────────────────────────────
   const cycleA = await prisma.productionCycle.upsert({
     where: { id: "cycle_2024_A_regina" },
@@ -153,12 +153,12 @@ async function main() {
       isActive: true,
       estadoFenologico: EstadoFenologico.CUAJA,
       horasFrioAcumuladas: 847,
-      calibreEstimado: 29.5, // mm - buen calibre para export
-      rendimientoEstimado: 14200, // kg/ha (temporada favorable)
+      calibreEstimado: 29.5, // mm - good caliber for export
+      rendimientoEstimado: 14200, // kg/ha (favorable season)
       fechaCosechaEstimada: new Date("2025-01-20"),
       destinoProduccion: DestinoProduccion.EXPORTACION,
       notas:
-        "Floración uniforme en octubre. Buena polinización (2 colmenas/ha). Leve estrés hídrico semana 48, corregido con riego.",
+        "Uniform flowering in October. Good pollination (2 hives/ha). Mild water stress week 48, corrected with irrigation.",
       cropId: cropA.id,
     },
   });
@@ -175,23 +175,23 @@ async function main() {
       horasFrioAcumuladas: 823,
       calibreEstimado: 27.8,
       rendimientoEstimado: 12500,
-      fechaCosechaEstimada: new Date("2025-01-10"), // Bing madura antes que Regina
+      fechaCosechaEstimada: new Date("2025-01-10"), // Bing ripens before Regina
       destinoProduccion: DestinoProduccion.MIXTO,
       notas:
-        "Variedad más sensible al calor. Monitorear calibre en enero. Destino: 60% export, 40% mercado interno.",
+        "Variety more sensitive to heat. Monitor caliber in January. Destination: 60% export, 40% domestic market.",
       cropId: cropB.id,
     },
   });
   console.log(
-    `✅ Ciclos activos: Regina (${cycleA.horasFrioAcumuladas}h frío) | Bing (${cycleB.horasFrioAcumuladas}h frío)`
+    `✅ Active cycles: Regina (${cycleA.horasFrioAcumuladas}h chill) | Bing (${cycleB.horasFrioAcumuladas}h chill)`
   );
 
   // ─────────────────────────────────────────────
-  // 6. REGISTROS DE INSUMOS (últimas 3 semanas)
-  //    Referencia: 2024-12-14 a 2025-01-04
+  // 6. INPUT RECORDS (last 3 weeks)
+  //    Reference: 2024-12-14 to 2025-01-04
   // ─────────────────────────────────────────────
   const inputsData = [
-    // ── Semana 1 (hace 21-14 días) ──
+    // ── Week 1 (21-14 days ago) ──
     {
       productionCycleId: cycleA.id,
       date: daysAgo(21),
@@ -202,7 +202,7 @@ async function main() {
       costPerUnit: 8500,
       totalCost: 127500,
       supplier: "Anasac",
-      notes: "Aplicado por lluvia pronosticada, prevención podredumbre parda",
+      notes: "Applied due to forecast rain, brown rot prevention",
     },
     {
       productionCycleId: cycleB.id,
@@ -214,7 +214,7 @@ async function main() {
       costPerUnit: 8500,
       totalCost: 102000,
       supplier: "Anasac",
-      notes: "Mismo tratamiento preventivo Lote B",
+      notes: "Same preventive treatment Lot B",
     },
     {
       productionCycleId: cycleA.id,
@@ -226,7 +226,7 @@ async function main() {
       costPerUnit: 1200,
       totalCost: 96000,
       supplier: "Compo Chile",
-      notes: "Fertirrigación - etapa cuaja, aumenta calibre y dulzor",
+      notes: "Fertigation - fruit set stage, increases caliber and sweetness",
     },
     {
       productionCycleId: cycleB.id,
@@ -238,32 +238,32 @@ async function main() {
       costPerUnit: 1200,
       totalCost: 78000,
       supplier: "Compo Chile",
-      notes: "Fertirrigación Lote B",
+      notes: "Fertigation Lot B",
     },
-    // ── Semana 2 (hace 13-7 días) ──
+    // ── Week 2 (13-7 days ago) ──
     {
       productionCycleId: cycleA.id,
       date: daysAgo(14),
       category: InputCategory.RIEGO,
-      name: "Agua riego (m³)",
+      name: "Irrigation water (m³)",
       quantity: 2500,
       unit: "m³",
       costPerUnit: 45,
       totalCost: 112500,
       supplier: "Canal Curicó",
-      notes: "Riego por goteo, 500 m³/ha. Semana calurosa (28-32°C)",
+      notes: "Drip irrigation, 500 m³/ha. Hot week (28-32°C)",
     },
     {
       productionCycleId: cycleB.id,
       date: daysAgo(14),
       category: InputCategory.RIEGO,
-      name: "Agua riego (m³)",
+      name: "Irrigation water (m³)",
       quantity: 2500,
       unit: "m³",
       costPerUnit: 45,
       totalCost: 112500,
       supplier: "Canal Curicó",
-      notes: "Riego por goteo Lote B",
+      notes: "Drip irrigation Lot B",
     },
     {
       productionCycleId: cycleA.id,
@@ -275,7 +275,7 @@ async function main() {
       costPerUnit: 9800,
       totalCost: 49000,
       supplier: "Dow Agrosciences",
-      notes: "Control mosca de la fruta, trampa detectó umbral de acción",
+      notes: "Fruit fly control, trap detected action threshold",
     },
     {
       productionCycleId: cycleA.id,
@@ -287,7 +287,7 @@ async function main() {
       costPerUnit: 1850,
       totalCost: 92500,
       supplier: "Yara Chile",
-      notes: "Aplicación foliar previene rajado en etapa llenado",
+      notes: "Foliar application prevents cracking during filling stage",
     },
     {
       productionCycleId: cycleB.id,
@@ -299,9 +299,9 @@ async function main() {
       costPerUnit: 1850,
       totalCost: 74000,
       supplier: "Yara Chile",
-      notes: "Aplicación foliar Lote B, prioritario por sensibilidad Bing al rajado",
+      notes: "Foliar application Lot B, priority due to Bing sensitivity to cracking",
     },
-    // ── Semana 3 (hace 6-0 días) ──
+    // ── Week 3 (6-0 days ago) ──
     {
       productionCycleId: cycleA.id,
       date: daysAgo(5),
@@ -312,44 +312,44 @@ async function main() {
       costPerUnit: 32000,
       totalCost: 256000,
       supplier: "Syngenta",
-      notes: "Tratamiento postcosecha preventivo, alta eficiencia en botrytis",
+      notes: "Preventive post-harvest treatment, high efficiency against botrytis",
     },
     {
       productionCycleId: cycleA.id,
       date: daysAgo(3),
       category: InputCategory.RIEGO,
-      name: "Agua riego (m³)",
+      name: "Irrigation water (m³)",
       quantity: 2000,
       unit: "m³",
       costPerUnit: 45,
       totalCost: 90000,
       supplier: "Canal Curicó",
-      notes: "Riego estratégico previo a cosecha Bing",
+      notes: "Strategic irrigation before Bing harvest",
     },
     {
       productionCycleId: cycleB.id,
       date: daysAgo(3),
       category: InputCategory.RIEGO,
-      name: "Agua riego (m³)",
+      name: "Irrigation water (m³)",
       quantity: 2000,
       unit: "m³",
       costPerUnit: 45,
       totalCost: 90000,
       supplier: "Canal Curicó",
-      notes: "ATENCIÓN: Reducir o suspender riego 48h antes cosecha para minimizar rajado",
+      notes: "ATTENTION: Reduce or suspend irrigation 48h before harvest to minimize cracking",
     },
   ];
 
   for (const input of inputsData) {
     await prisma.input.create({ data: input });
   }
-  console.log(`✅ ${inputsData.length} registros de insumos creados`);
+  console.log(`✅ ${inputsData.length} input records created`);
 
   // ─────────────────────────────────────────────
-  // 7. REGISTROS DE MANO DE OBRA (últimas 3 semanas)
+  // 7. LABOR RECORDS (last 3 weeks)
   // ─────────────────────────────────────────────
   const laborData = [
-    // Semana 1
+    // Week 1
     {
       productionCycleId: cycleA.id,
       date: daysAgo(20),
@@ -359,7 +359,7 @@ async function main() {
       totalHours: 32,
       costPerHour: 2800,
       totalCost: 89600,
-      notes: "Aplicación fungicida Captan, equipo pulverizador",
+      notes: "Captan fungicide application, sprayer equipment",
     },
     {
       productionCycleId: cycleB.id,
@@ -370,7 +370,7 @@ async function main() {
       totalHours: 24,
       costPerHour: 2800,
       totalCost: 67200,
-      notes: "Aplicación fungicida Lote B",
+      notes: "Fungicide application Lot B",
     },
     {
       productionCycleId: cycleA.id,
@@ -381,7 +381,7 @@ async function main() {
       totalHours: 12,
       costPerHour: 3200,
       totalCost: 38400,
-      notes: "Conteo de frutos por ramo, estimación de calibre y carga",
+      notes: "Fruit count per branch, caliber and load estimation",
     },
     {
       productionCycleId: cycleB.id,
@@ -392,7 +392,7 @@ async function main() {
       totalHours: 12,
       costPerHour: 3200,
       totalCost: 38400,
-      notes: "Monitoreo Lote B, colocación trampas mosca",
+      notes: "Lot B monitoring, fly trap placement",
     },
     {
       productionCycleId: cycleA.id,
@@ -403,9 +403,9 @@ async function main() {
       totalHours: 8,
       costPerHour: 2500,
       totalCost: 20000,
-      notes: "Supervisión y ajuste de goteros bloqueados",
+      notes: "Supervision and adjustment of blocked drippers",
     },
-    // Semana 2
+    // Week 2
     {
       productionCycleId: cycleA.id,
       date: daysAgo(11),
@@ -415,7 +415,7 @@ async function main() {
       totalHours: 24,
       costPerHour: 2800,
       totalCost: 67200,
-      notes: "Aplicación insecticida + calcio foliar",
+      notes: "Insecticide + foliar calcium application",
     },
     {
       productionCycleId: cycleB.id,
@@ -426,7 +426,7 @@ async function main() {
       totalHours: 72,
       costPerHour: 2600,
       totalCost: 187200,
-      notes: "Instalación malla antigranizo y antiluvia sobre Lote B",
+      notes: "Hail and rain netting installation over Lot B",
     },
     {
       productionCycleId: cycleA.id,
@@ -437,9 +437,9 @@ async function main() {
       totalHours: 48,
       costPerHour: 2700,
       totalCost: 129600,
-      notes: "Raleo de frutos dobles y muy pequeños para mejorar calibre final",
+      notes: "Thinning of double and very small fruits to improve final caliber",
     },
-    // Semana 3
+    // Week 3
     {
       productionCycleId: cycleA.id,
       date: daysAgo(6),
@@ -449,7 +449,7 @@ async function main() {
       totalHours: 28,
       costPerHour: 2800,
       totalCost: 78400,
-      notes: "Aplicación Fludioxonil preventivo",
+      notes: "Preventive Fludioxonil application",
     },
     {
       productionCycleId: cycleB.id,
@@ -460,7 +460,7 @@ async function main() {
       totalHours: 15,
       costPerHour: 3200,
       totalCost: 48000,
-      notes: "Muestreo de madurez: Brix 16.2 promedio, calibre 27mm, color rojo 80%",
+      notes: "Maturity sampling: average Brix 16.2, caliber 27mm, 80% red color",
     },
     {
       productionCycleId: cycleB.id,
@@ -471,46 +471,46 @@ async function main() {
       totalHours: 30,
       costPerHour: 2500,
       totalCost: 75000,
-      notes: "Preparación de bins y material de cosecha, calibración balanzas",
+      notes: "Preparation of bins and harvest material, scale calibration",
     },
   ];
 
   for (const labor of laborData) {
     await prisma.laborRecord.create({ data: labor });
   }
-  console.log(`✅ ${laborData.length} registros de mano de obra creados`);
+  console.log(`✅ ${laborData.length} labor records created`);
 
   // ─────────────────────────────────────────────
-  // 8. REGISTROS CLIMÁTICOS (últimas 3 semanas, diarios)
-  //    Curicó, Maule: verano austral (diciembre-enero)
-  //    Rango típico: 15-32°C, lluvia ocasional, viento sur
+  // 8. WEATHER RECORDS (last 3 weeks, daily)
+  //    Curicó, Maule: austral summer (December-January)
+  //    Typical range: 15-32°C, occasional rain, southern wind
   // ─────────────────────────────────────────────
   const weatherHistory = [
-    // Datos diarios: [diasAtras, tempC(media), tempMin, tempMax, precip, windKmh, humidity]
-    // Semana 3 hace 21 días (mediados diciembre)
+    // Daily data: [daysAgo, avgTempC, tempMin, tempMax, precip, windKmh, humidity]
+    // Week 3 21 days ago (mid December)
     { d: 21, tC: 22.4, tMin: 11.2, tMax: 31.8, p: 0, w: 18, h: 52 },
     { d: 20, tC: 19.8, tMin: 10.5, tMax: 28.2, p: 0, w: 22, h: 58 },
-    { d: 19, tC: 17.2, tMin: 9.8, tMax: 23.5, p: 4.2, w: 15, h: 72 }, // lluvia leve
+    { d: 19, tC: 17.2, tMin: 9.8, tMax: 23.5, p: 4.2, w: 15, h: 72 }, // light rain
     { d: 18, tC: 18.5, tMin: 10.1, tMax: 25.8, p: 0, w: 12, h: 65 },
     { d: 17, tC: 21.3, tMin: 12.4, tMax: 30.1, p: 0, w: 20, h: 55 },
-    { d: 16, tC: 24.6, tMin: 14.2, tMax: 34.5, p: 0, w: 25, h: 42 }, // calor
-    { d: 15, tC: 26.1, tMin: 15.8, tMax: 35.8, p: 0, w: 28, h: 38 }, // GOLPE CALOR
-    // Semana 2 (hace 14-8 días, fines diciembre)
+    { d: 16, tC: 24.6, tMin: 14.2, tMax: 34.5, p: 0, w: 25, h: 42 }, // heat
+    { d: 15, tC: 26.1, tMin: 15.8, tMax: 35.8, p: 0, w: 28, h: 38 }, // HEAT STRESS
+    // Week 2 (14-8 days ago, late December)
     { d: 14, tC: 23.2, tMin: 13.5, tMax: 32.6, p: 0, w: 22, h: 45 },
     { d: 13, tC: 21.8, tMin: 12.8, tMax: 30.4, p: 0, w: 18, h: 50 },
     { d: 12, tC: 20.5, tMin: 11.9, tMax: 28.5, p: 1.8, w: 14, h: 60 },
     { d: 11, tC: 22.9, tMin: 13.2, tMax: 31.2, p: 0, w: 16, h: 48 },
-    { d: 10, tC: 25.4, tMin: 14.8, tMax: 34.2, p: 0, w: 24, h: 40 }, // calor fuerte
-    { d: 9, tC: 27.3, tMin: 16.1, tMax: 36.4, p: 0, w: 30, h: 35 },  // GOLPE CALOR
+    { d: 10, tC: 25.4, tMin: 14.8, tMax: 34.2, p: 0, w: 24, h: 40 }, // strong heat
+    { d: 9, tC: 27.3, tMin: 16.1, tMax: 36.4, p: 0, w: 30, h: 35 },  // HEAT STRESS
     { d: 8, tC: 24.8, tMin: 14.5, tMax: 33.1, p: 0, w: 26, h: 42 },
-    // Semana 1 (hace 7-1 días, inicio enero 2025)
+    // Week 1 (7-1 days ago, early January 2025)
     { d: 7, tC: 22.1, tMin: 12.8, tMax: 30.5, p: 0, w: 20, h: 52 },
     { d: 6, tC: 20.8, tMin: 11.5, tMax: 29.2, p: 0, w: 15, h: 55 },
     { d: 5, tC: 23.5, tMin: 13.8, tMax: 32.4, p: 0, w: 22, h: 47 },
-    { d: 4, tC: 25.9, tMin: 15.2, tMax: 35.0, p: 0, w: 27, h: 40 }, // calor
-    { d: 3, tC: 28.4, tMin: 17.1, tMax: 38.2, p: 0, w: 32, h: 32 }, // ONDA DE CALOR
-    { d: 2, tC: 26.7, tMin: 16.4, tMax: 36.5, p: 0, w: 28, h: 36 }, // continúa calor
-    { d: 1, tC: 22.3, tMin: 13.2, tMax: 31.8, p: 2.5, w: 18, h: 58 }, // lluvia leve
+    { d: 4, tC: 25.9, tMin: 15.2, tMax: 35.0, p: 0, w: 27, h: 40 }, // heat
+    { d: 3, tC: 28.4, tMin: 17.1, tMax: 38.2, p: 0, w: 32, h: 32 }, // HEAT WAVE
+    { d: 2, tC: 26.7, tMin: 16.4, tMax: 36.5, p: 0, w: 28, h: 36 }, // heat continues
+    { d: 1, tC: 22.3, tMin: 13.2, tMax: 31.8, p: 2.5, w: 18, h: 58 }, // light rain
   ];
 
   for (const w of weatherHistory) {
@@ -519,10 +519,10 @@ async function main() {
 
     const esBajoUmbralHelada = w.tMin < -1;
     const contribuyeHorasFrio = w.tC < 7;
-    // Lluvia en período enero = riesgo cosecha
+    // Rain in January period = harvest risk
     const esRiesgoLluvia = w.p > 1 && w.d <= 7;
 
-    // Evapotranspiración aproximada (Hargreaves simplificado)
+    // Approximate evapotranspiration (simplified Hargreaves)
     const etMm = Math.max(0, 0.0023 * (w.tC + 17.8) * Math.sqrt(w.tMax - w.tMin) * 8.5);
 
     await prisma.weatherLog.upsert({
@@ -545,21 +545,21 @@ async function main() {
       },
     });
   }
-  console.log(`✅ ${weatherHistory.length} registros climáticos creados`);
+  console.log(`✅ ${weatherHistory.length} weather records created`);
 
   // ─────────────────────────────────────────────
-  // 9. ALERTAS (generadas por el sistema y por IA)
+  // 9. ALERTS (generated by system and AI)
   // ─────────────────────────────────────────────
   const alertsData = [
     {
       farmId: farm.id,
       type: AlertType.GOLPE_CALOR,
       severity: AlertSeverity.CRITICA,
-      title: "Onda de calor - Riesgo de quemadura solar en fruto",
+      title: "Heat wave - Risk of sunburn on fruit",
       description:
-        "Temperatura máxima alcanzó 38.2°C el 2 de enero. En estado de llenado de fruto, temperaturas sobre 35°C por más de 2 horas reducen significativamente el calibre final y pueden provocar quemaduras solares en la cara expuesta del fruto.",
+        "Maximum temperature reached 38.2°C on January 2nd. During fruit filling stage, temperatures above 35°C for more than 2 hours significantly reduce final caliber and can cause sunburn on the exposed face of the fruit.",
       recommendation:
-        "Aplicar kaolín (Surround WP) 25 kg/ha como protector solar. Activar riego por microaspersión sobre copa 2-3 veces al día entre 12:00 y 17:00h. Monitorear temperatura bajo el dosel cada 2 horas.",
+        "Apply kaolin (Surround WP) 25 kg/ha as sun protector. Activate micro-sprinkler irrigation over canopy 2-3 times daily between 12:00 PM and 5:00 PM. Monitor temperature under canopy every 2 hours.",
       triggerValue: 38.2,
       triggerMetric: "temperatura_maxima_c",
       source: AlertSource.AUTOMATICA,
@@ -571,11 +571,11 @@ async function main() {
       farmId: farm.id,
       type: AlertType.LLUVIA_COSECHA,
       severity: AlertSeverity.ADVERTENCIA,
-      title: "Lluvia detectada - Riesgo de rajado en Bing",
+      title: "Rain detected - Risk of cracking in Bing",
       description:
-        "Se registraron 2.5 mm de lluvia el día 3 de enero. Con Bing próxima a cosecha (estimada 10 enero), cualquier precipitación aumenta la presión osmótica y provoca rajado del epicarpio, especialmente en calibres sobre 28mm.",
+        "2.5 mm of rain were recorded on January 3rd. With Bing close to harvest (estimated Jan 10), any precipitation increases osmotic pressure and causes cracking of the epicarp, especially in calibers over 28mm.",
       recommendation:
-        "Revisar malla antiluvia Lote B y asegurar escurrimiento. Adelantar evaluación de madurez a 5 enero. Si Brix ≥ 16.5 y color ≥ 85% rojo, considerar cosecha anticipada para evitar segunda lluvia pronosticada.",
+        "Check rain netting on Lot B and ensure runoff. Advance maturity evaluation to Jan 5. If Brix ≥ 16.5 and color ≥ 85% red, consider early harvest to avoid second forecast rain.",
       triggerValue: 2.5,
       triggerMetric: "precipitacion_mm",
       source: AlertSource.IA,
@@ -587,11 +587,11 @@ async function main() {
       farmId: farm.id,
       type: AlertType.GOLPE_CALOR,
       severity: AlertSeverity.ADVERTENCIA,
-      title: "Temperatura crítica sostenida - Posible reducción de calibre Regina",
+      title: "Sustained critical temperature - Possible reduction in Regina caliber",
       description:
-        "Acumulación de 4 días consecutivos sobre 34°C (semana del 27-30 diciembre). Impacto estimado en calibre final de Regina: reducción de 0.8-1.2mm respecto a proyección inicial. Calibre estimado revisado: 28.3mm (bajó de 29.5mm).",
+        "Accumulation of 4 consecutive days above 34°C (week of Dec 27-30). Estimated impact on Regina final caliber: reduction of 0.8-1.2mm from initial projection. Revised estimated caliber: 28.3mm (down from 29.5mm).",
       recommendation:
-        "Aumentar dosis KNO₃ fertirrigación a 120 kg/ha en próxima aplicación. Evaluar aplicación foliar de ácido giberélico (ProGibb 40%) 15 ppm para compensar reducción de calibre. Contactar empresa empaque para ajustar proyección de volumen categoría JJ.",
+        "Increase KNO₃ fertigation dose to 120 kg/ha in next application. Evaluate foliar application of gibberellic acid (ProGibb 40%) 15 ppm to compensate caliber reduction. Contact packing company to adjust JJ category volume projection.",
       triggerValue: 36.4,
       triggerMetric: "temperatura_maxima_c",
       source: AlertSource.IA,
@@ -603,11 +603,11 @@ async function main() {
       farmId: farm.id,
       type: AlertType.GENERAL,
       severity: AlertSeverity.INFO,
-      title: "Reporte semanal IA - Semana del 28 diciembre al 4 enero",
+      title: "AI weekly report - Week of Dec 28 to Jan 4",
       description:
-        "Estado general del predio: BUENO con observaciones. Ambos lotes completaron la etapa de cuaja con buena uniformidad. Lote A (Regina): carga estimada 14.2 t/ha, calibre proyectado 28-30mm, color en desarrollo. Lote B (Bing): carga estimada 12.5 t/ha, calibre 27-28mm, madurez avanzada. Horas frío acumuladas suficientes para ambas variedades. Principal riesgo actual: onda de calor en curso.",
+        "General farm status: GOOD with observations. Both lots completed fruit set stage with good uniformity. Lot A (Regina): estimated load 14.2 t/ha, projected caliber 28-30mm, color developing. Lot B (Bing): estimated load 12.5 t/ha, caliber 27-28mm, advanced maturity. Sufficient accumulated chill hours for both varieties. Main current risk: ongoing heat wave.",
       recommendation:
-        "Prioridad 1: Manejo del calor (ver alerta crítica). Prioridad 2: Preparar logística cosecha Bing para semana del 6-10 enero. Prioridad 3: Contratar cuadrilla cosecha (40 personas/día, 3-4 días). Iniciar coordinación con packing.",
+        "Priority 1: Heat management (see critical alert). Priority 2: Prepare Bing harvest logistics for week of Jan 6-10. Priority 3: Hire harvest crew (40 people/day, 3-4 days). Start coordination with packing.",
       source: AlertSource.IA,
       isRead: false,
       isResolved: false,
@@ -618,44 +618,44 @@ async function main() {
   for (const alert of alertsData) {
     await prisma.alert.create({ data: alert });
   }
-  console.log(`✅ ${alertsData.length} alertas creadas`);
+  console.log(`✅ ${alertsData.length} alerts created`);
 
   // ─────────────────────────────────────────────
-  // RESUMEN FINAL
+  // FINAL SUMMARY
   // ─────────────────────────────────────────────
   console.log("\n" + "─".repeat(50));
-  console.log("🎉 Seed completado exitosamente!\n");
-  console.log("📊 Resumen del dataset:");
-  console.log(`   Usuario:    ${user.name}`);
-  console.log(`   Predio:     ${farm.name}, ${farm.commune}`);
+  console.log("🎉 Seed completed successfully!\n");
+  console.log("📊 Dataset summary:");
+  console.log(`   User:    ${user.name}`);
+  console.log(`   Farm:     ${farm.name}, ${farm.commune}`);
   console.log(
-    `   Superficie: ${farm.totalArea} ha totales (10 ha cerezos)`
+    `   Area: ${farm.totalArea} ha total (10 ha cherries)`
   );
   console.log(
-    `   Lotes:      2 × 5 ha (Regina Lote A | Bing Lote B)`
+    `   Lots:      2 × 5 ha (Regina Lot A | Bing Lot B)`
   );
-  console.log(`   Temporada:  2024/2025 - Estado: CUAJA → LLENADO`);
+  console.log(`   Season:  2024/2025 - Stage: CUAJA → FILLING`);
   console.log(
-    `   Insumos:    ${inputsData.length} registros`
-  );
-  console.log(
-    `   Labor:      ${laborData.length} registros`
+    `   Inputs:    ${inputsData.length} records`
   );
   console.log(
-    `   Clima:      ${weatherHistory.length} días (3 semanas)`
+    `   Labor:      ${laborData.length} records`
   );
   console.log(
-    `   Alertas:    ${alertsData.length} (1 crítica, 2 advertencias, 1 info)`
+    `   Weather:      ${weatherHistory.length} days (3 weeks)`
+  );
+  console.log(
+    `   Alerts:    ${alertsData.length} (1 critical, 2 warnings, 1 info)`
   );
   console.log("─".repeat(50));
   console.log(
-    "\n🔑 Login de prueba (Clerk): carlos.fuentes@agromind.cl"
+    "\n🔑 Test login (Clerk): carlos.fuentes@agromind.cl"
   );
 }
 
 main()
   .catch((e) => {
-    console.error("❌ Error en seed:", e);
+    console.error("❌ Error in seed:", e);
     process.exit(1);
   })
   .finally(async () => {

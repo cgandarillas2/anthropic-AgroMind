@@ -17,18 +17,18 @@ type Message = { role: "user" | "assistant"; content: string };
 type ReportType = "weekly" | "risk" | "harvest";
 
 const REPORT_META: Record<ReportType, { label: string; icon: React.ReactNode; description: string; color: string }> = {
-  weekly:  { label: "Reporte semanal",     icon: <FileText className="w-4 h-4" />,      description: "Estado del campo, acciones realizadas y próximas tareas", color: "bg-green-50 border-green-200 hover:bg-green-100" },
-  risk:    { label: "Análisis de riesgo",  icon: <AlertTriangle className="w-4 h-4" />, description: "Riesgos climáticos activos con plan de acción inmediato",    color: "bg-orange-50 border-orange-200 hover:bg-orange-100" },
-  harvest: { label: "Estimación cosecha",  icon: <Calendar className="w-4 h-4" />,      description: "Ventana óptima de cosecha, logística e ingresos proyectados", color: "bg-blue-50 border-blue-200 hover:bg-blue-100" },
+  weekly:  { label: "Weekly report",     icon: <FileText className="w-4 h-4" />,      description: "Field status, actions performed and upcoming tasks", color: "bg-green-50 border-green-200 hover:bg-green-100" },
+  risk:    { label: "Risk analysis",  icon: <AlertTriangle className="w-4 h-4" />, description: "Active climate risks with immediate action plan",    color: "bg-orange-50 border-orange-200 hover:bg-orange-100" },
+  harvest: { label: "Harvest estimate",  icon: <Calendar className="w-4 h-4" />,      description: "Optimal harvest window, logistics and projected income", color: "bg-blue-50 border-blue-200 hover:bg-blue-100" },
 };
 
 const QUICK_QUESTIONS = [
-  "¿Qué debo hacer esta semana con el cerezo?",
-  "¿Cuándo debo cosechar el Lote B (Bing)?",
-  "¿Qué riesgos climáticos tengo esta semana?",
-  "¿El calibre está bien para exportación?",
-  "¿Cuántas horas de riego necesito hoy?",
-  "¿Qué fungicida aplicar antes de la lluvia?",
+  "What should I do this week with the cherry tree?",
+  "When should I harvest Lot B (Bing)?",
+  "What climate risks do I have this week?",
+  "Is the caliber good for export?",
+  "How many hours of irrigation do I need today?",
+  "What fungicide to apply before the rain?",
 ];
 
 export function AiAgentClient() {
@@ -138,10 +138,10 @@ export function AiAgentClient() {
     <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
       <TabsList className="mb-4">
         <TabsTrigger value="chat" className="flex items-center gap-1.5">
-          <Bot className="w-4 h-4" /> Chat con el agrónomo
+          <Bot className="w-4 h-4" /> Chat with the agronomist
         </TabsTrigger>
         <TabsTrigger value="reports" className="flex items-center gap-1.5">
-          <Sparkles className="w-4 h-4" /> Reportes automáticos
+          <Sparkles className="w-4 h-4" /> Automatic reports
         </TabsTrigger>
       </TabsList>
 
@@ -151,7 +151,7 @@ export function AiAgentClient() {
         {messages.length === 0 && (
           <Card className="border-dashed">
             <CardContent className="pt-4 pb-3">
-              <p className="text-xs text-gray-400 mb-3 font-medium">Preguntas frecuentes</p>
+              <p className="text-xs text-gray-400 mb-3 font-medium">Frequent questions</p>
               <div className="flex flex-wrap gap-2">
                 {QUICK_QUESTIONS.map((q) => (
                   <button
@@ -174,7 +174,7 @@ export function AiAgentClient() {
               {messages.length === 0 && (
                 <div className="h-full flex flex-col items-center justify-center text-gray-300 gap-3">
                   <Bot className="w-12 h-12" />
-                  <p className="text-sm">Consulta al agrónomo sobre tu predio</p>
+                  <p className="text-sm">Consult the agronomist about your farm</p>
                 </div>
               )}
 
@@ -223,7 +223,7 @@ export function AiAgentClient() {
                 <button
                   onClick={() => setMessages([])}
                   className="text-gray-300 hover:text-gray-500 transition-colors p-1.5 shrink-0"
-                  title="Limpiar conversación"
+                  title="Clear conversation"
                 >
                   <RotateCcw className="w-4 h-4" />
                 </button>
@@ -232,7 +232,7 @@ export function AiAgentClient() {
                 ref={textareaRef}
                 rows={2}
                 className="flex-1 resize-none rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Pregunta sobre el predio, clima, manejo... (Enter para enviar)"
+                placeholder="Question about the farm, weather, management... (Enter to send)"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKey}
@@ -305,7 +305,7 @@ export function AiAgentClient() {
         {!Object.values(reportContent).some(Boolean) && !generatingReport && (
           <div className="text-center py-16 text-gray-300">
             <Sparkles className="w-10 h-10 mx-auto mb-3" />
-            <p className="text-sm text-gray-400">Selecciona un tipo de reporte para generarlo</p>
+            <p className="text-sm text-gray-400">Select a report type to generate it</p>
           </div>
         )}
       </TabsContent>

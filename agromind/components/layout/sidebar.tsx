@@ -16,15 +16,15 @@ import {
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Panel", icon: LayoutDashboard },
-  { href: "/farms", label: "Predios", icon: MapPin },
-  { href: "/cycles", label: "Ciclo activo", icon: Leaf },
-  { href: "/weather", label: "Clima", icon: Cloud },
-  { href: "/alerts", label: "Alertas", icon: BellRing },
-  { href: "/inputs", label: "Insumos", icon: FlaskConical },
-  { href: "/labor", label: "Mano de obra", icon: Users },
-  { href: "/finance", label: "Finanzas", icon: BarChart2 },
-  { href: "/ai-agent", label: "Agente IA", icon: Bot },
+
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/farms", label: "Farms", icon: MapPin },
+  { href: "/cycles", label: "Active Cycle", icon: Leaf },
+  { href: "/weather", label: "Weather", icon: Cloud },
+  { href: "/alerts", label: "Alerts", icon: BellRing },
+  { href: "/inputs", label: "Inputs", icon: FlaskConical },
+  { href: "/labor", label: "Labor", icon: Users },
+  { href: "/ai-agent", label: "AI Agent", icon: Bot }
 ];
 
 export function Sidebar() {
@@ -75,7 +75,7 @@ export function Sidebar() {
 
       {/* Footer del sidebar */}
       <div className="px-5 py-3 border-t border-gray-100 text-xs text-gray-400">
-        Temporada 2024/2025
+        Season 2024/2025
       </div>
     </aside>
   );

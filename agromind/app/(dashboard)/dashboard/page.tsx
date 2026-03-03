@@ -9,23 +9,23 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Thermometer, BellRing, Leaf, DollarSign, Calendar, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { format, differenceInDays } from "date-fns";
-import { es } from "date-fns/locale";
+import { enUS } from "date-fns/locale";
 import { ESTADO_FENOLOGICO_LABELS, DESTINO_LABELS } from "@/types";
 import { getWeatherInfo } from "@/lib/weather/open-meteo";
 
 export const revalidate = 900; // 15 min
 
 async function getDashboardData(clerkId: string) {
-  // En dev local: si el usuario no tiene farms, reasignar el farm del seed
+  // In dev mode: if the user has no farms, reassign the seed farm
   const userCheck = await db.user.findUnique({ where: { clerkId }, select: { id: true } });
   if (userCheck) {
     const hasFarm = await db.farm.findFirst({ where: { ownerId: userCheck.id } });
     if (!hasFarm) {
-      // Reasignar el farm de prueba a este usuario
+      // Reassign the test farm to this user
       await db.farm.updateMany({
         where: { id: "farm_curico_001" },
         data: { ownerId: userCheck.id },
-      }).catch(() => null); // silencioso si ya fue reasignado
+      }).catch(() => null); // silent if already reassigned
     }
   }
 
@@ -104,7 +104,7 @@ async function getDashboardData(clerkId: string) {
       riesgosCriticos: riesgos.filter((r) => r.severidad === "CRITICA").length,
     };
   } catch {
-    // Clima no disponible — no bloquear dashboard
+    // Weather unavailable — don't block dashboard
   }
 
   return { user, farm, ciclosActivos, costosTotales, weatherSummary };
@@ -119,9 +119,9 @@ export default async function DashboardPage() {
   if (!data) {
     return (
       <div className="text-center py-20">
-        <p className="text-gray-500 mb-4">No tienes predios registrados.</p>
+        <p className="text-gray-500 mb-4">You have no farms registered.</p>
         <Link href="/farms/new" className="text-green-600 underline">
-          Registrar mi primer predio
+          Register my first farm
         </Link>
       </div>
     );
@@ -129,27 +129,27 @@ export default async function DashboardPage() {
 
   const { user, farm, ciclosActivos, costosTotales, weatherSummary } = data;
   const cicloRef = ciclosActivos[0];
-  const hoy = format(new Date(), "EEEE d 'de' MMMM", { locale: es });
+  const hoy = format(new Date(), "EEEE, MMMM d", { locale: enUS });
 
   return (
     <div className="space-y-6 max-w-5xl">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">
-          Hola, {user.name.split(" ")[0]}
+          Hello, {user.name.split(" ")[0]}
         </h1>
         <p className="text-sm text-gray-500 capitalize mt-0.5">{hoy}</p>
       </div>
 
-      {/* Alertas no leídas */}
+      {/* Unread alerts */}
       {farm.alerts.length > 0 && (
         <Alert className="border-red-200 bg-red-50">
           <BellRing className="w-4 h-4 text-red-500" />
           <AlertDescription className="flex items-center justify-between">
             <span className="text-red-800 text-sm">
-              Tienes <strong>{farm.alerts.length} alerta(s)</strong> sin leer
+              You have <strong>{farm.alerts.length} alert(s)</strong> unread
             </span>
             <Link href="/alerts" className="text-red-600 text-sm font-medium underline underline-offset-2">
-              Ver todas →
+              View all →
             </Link>
           </AlertDescription>
         </Alert>
@@ -160,7 +160,7 @@ export default async function DashboardPage() {
         <Link href="/weather">
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-xs font-medium text-gray-500">Temperatura</CardTitle>
+              <CardTitle className="text-xs font-medium text-gray-500">Temperature</CardTitle>
               <Thermometer className="w-4 h-4 text-orange-400" />
             </CardHeader>
             <CardContent>
@@ -170,8 +170,8 @@ export default async function DashboardPage() {
               <div className="text-xs text-gray-400 mt-1 flex items-center gap-1">
                 {weatherSummary && <span>{getWeatherInfo(weatherSummary.weatherCode).emoji}</span>}
                 {weatherSummary?.riesgosCriticos
-                  ? <span className="text-red-500">{weatherSummary.riesgosCriticos} riesgo(s) crítico(s)</span>
-                  : <span>Sin alertas climáticas</span>}
+                  ? <span className="text-red-500">{weatherSummary.riesgosCriticos} critical risk(s)</span>
+                  : <span>No weather alerts</span>}
               </div>
             </CardContent>
           </Card>
@@ -180,7 +180,7 @@ export default async function DashboardPage() {
         <Link href="/cycles">
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-xs font-medium text-gray-500">Fenología</CardTitle>
+              <CardTitle className="text-xs font-medium text-gray-500">Phenology</CardTitle>
               <Leaf className="w-4 h-4 text-green-500" />
             </CardHeader>
             <CardContent>
@@ -188,7 +188,7 @@ export default async function DashboardPage() {
                 {cicloRef ? ESTADO_FENOLOGICO_LABELS[cicloRef.estadoFenologico] : "—"}
               </div>
               <div className="text-xs text-gray-400 mt-1">
-                {cicloRef ? `❄️ ${cicloRef.horasFrioAcumuladas}h frío` : "Sin ciclo activo"}
+                {cicloRef ? `❄️ ${cicloRef.horasFrioAcumuladas}h cold` : "No active cycle"}
               </div>
             </CardContent>
           </Card>
@@ -197,7 +197,7 @@ export default async function DashboardPage() {
         <Link href="/inputs">
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-xs font-medium text-gray-500">Costo acumulado</CardTitle>
+              <CardTitle className="text-xs font-medium text-gray-500">Accumulated cost</CardTitle>
               <DollarSign className="w-4 h-4 text-emerald-500" />
             </CardHeader>
             <CardContent>
@@ -214,31 +214,31 @@ export default async function DashboardPage() {
         <Link href="/cycles">
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-xs font-medium text-gray-500">Cosecha estimada</CardTitle>
+              <CardTitle className="text-xs font-medium text-gray-500">Estimated harvest</CardTitle>
               <Calendar className="w-4 h-4 text-blue-400" />
             </CardHeader>
             <CardContent>
               {cicloRef?.fechaCosechaEstimada ? (
                 <>
                   <div className="text-base font-bold">
-                    {format(cicloRef.fechaCosechaEstimada, "d MMM", { locale: es })}
+                    {format(cicloRef.fechaCosechaEstimada, "MMM d", { locale: enUS })}
                   </div>
                   <div className="text-xs text-gray-400 mt-1">
-                    en {differenceInDays(cicloRef.fechaCosechaEstimada, new Date())} días
+                    in {differenceInDays(cicloRef.fechaCosechaEstimada, new Date())} days
                   </div>
                 </>
               ) : (
-                <div className="text-base font-bold text-gray-400">Por definir</div>
+                <div className="text-base font-bold text-gray-400">To be defined</div>
               )}
             </CardContent>
           </Card>
         </Link>
       </div>
 
-      {/* Ciclos activos */}
+      {/* Active cycles */}
       <div>
         <h2 className="text-sm font-semibold text-gray-700 mb-3">
-          Ciclos activos — {farm.name}
+          Active cycles — {farm.name}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {ciclosActivos.map((ciclo) => {
@@ -267,17 +267,17 @@ export default async function DashboardPage() {
                 <CardContent className="space-y-3">
                   <div className="grid grid-cols-3 gap-2 text-center">
                     <div className="bg-gray-50 rounded-lg p-2">
-                      <div className="text-xs text-gray-400">Calibre est.</div>
+                      <div className="text-xs text-gray-400">Est. size</div>
                       <div className="font-bold text-sm">{ciclo.calibreEstimado?.toFixed(1) ?? "—"}mm</div>
                     </div>
                     <div className="bg-gray-50 rounded-lg p-2">
-                      <div className="text-xs text-gray-400">Rend. est.</div>
+                      <div className="text-xs text-gray-400">Est. yield</div>
                       <div className="font-bold text-sm">
                         {ciclo.rendimientoEstimado ? `${(ciclo.rendimientoEstimado / 1000).toFixed(1)}t/ha` : "—"}
                       </div>
                     </div>
                     <div className="bg-gray-50 rounded-lg p-2">
-                      <div className="text-xs text-gray-400">Horas frío</div>
+                      <div className="text-xs text-gray-400">Cold hours</div>
                       <div className={`font-bold text-sm ${ciclo.horasFrioAcumuladas >= 800 ? "text-green-600" : "text-yellow-600"}`}>
                         {ciclo.horasFrioAcumuladas}h
                       </div>
@@ -285,11 +285,11 @@ export default async function DashboardPage() {
                   </div>
                   <div className="space-y-1.5 text-xs">
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Insumos</span>
+                      <span className="text-gray-400">Inputs</span>
                       <span>${(costoInsumos / 1000).toFixed(0)}k CLP</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Mano de obra</span>
+                      <span className="text-gray-400">Labor</span>
                       <span>${(costoLabor / 1000).toFixed(0)}k CLP</span>
                     </div>
                     <div className="flex justify-between font-semibold border-t pt-1">
@@ -299,7 +299,7 @@ export default async function DashboardPage() {
                     {ingresosEst && (
                       <div className="flex justify-between text-green-600 font-medium">
                         <span className="flex items-center gap-1">
-                          <TrendingUp className="w-3 h-3" /> Ingreso est.
+                          <TrendingUp className="w-3 h-3" /> Est. income
                         </span>
                         <span>${(ingresosEst / 1_000_000).toFixed(2)}M CLP</span>
                       </div>
@@ -312,12 +312,12 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Alertas recientes */}
+      {/* Recent alerts */}
       {farm.alerts.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-700">Alertas recientes</h2>
-            <Link href="/alerts" className="text-xs text-green-600 hover:underline">Ver todas</Link>
+            <h2 className="text-sm font-semibold text-gray-700">Recent alerts</h2>
+            <Link href="/alerts" className="text-xs text-green-600 hover:underline">View all</Link>
           </div>
           <div className="space-y-2">
             {farm.alerts.map((alert) => {

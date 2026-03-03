@@ -6,9 +6,9 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "AgroMind - ERP Agrícola Inteligente",
+  title: "AgroMind - Smart Agricultural ERP",
   description:
-    "Gestión de cerezos con IA integrada. Monitoreo climático, alertas de riesgo y optimización de cosecha para la Región del Maule.",
+    "Cherry orchard management with integrated AI. Climate monitoring, risk alerts and harvest optimization for the Maule Region.",
 };
 
 export default function RootLayout({
@@ -18,7 +18,7 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="es">
+      <html lang="en">
         <body className={`${inter.className} antialiased bg-background`}>
           {children}
         </body>

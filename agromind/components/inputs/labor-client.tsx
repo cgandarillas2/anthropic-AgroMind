@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trash2, Plus, Users } from "lucide-react";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { enUS } from "date-fns/locale";
 import { useRouter } from "next/navigation";
 import type { LaborRecord, ProductionCycle, Crop, Lot } from "@prisma/client";
 import { LABOR_ACTIVITY_LABELS } from "@/types";
@@ -89,7 +89,7 @@ export function LaborClient({ records: initial, cycles }: Props) {
       <div className="grid grid-cols-3 gap-3">
         <Card className="bg-blue-50 border-blue-200">
           <CardContent className="pt-4 pb-3">
-            <div className="text-xs text-blue-600 font-medium">Total mano de obra</div>
+            <div className="text-xs text-blue-600 font-medium">Total labor</div>
             <div className="text-2xl font-bold text-blue-800 mt-1">
               ${(totalCost / 1_000_000).toFixed(3)}M
             </div>
@@ -97,7 +97,7 @@ export function LaborClient({ records: initial, cycles }: Props) {
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3">
-            <div className="text-xs text-gray-400 font-medium">Horas totales</div>
+            <div className="text-xs text-gray-400 font-medium">Total hours</div>
             <div className="text-2xl font-bold text-gray-800 mt-1">
               {totalHours.toLocaleString("es-CL")}h
             </div>
@@ -105,7 +105,7 @@ export function LaborClient({ records: initial, cycles }: Props) {
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3">
-            <div className="text-xs text-gray-400 font-medium">Costo/hora promedio</div>
+            <div className="text-xs text-gray-400 font-medium">Average cost/hour</div>
             <div className="text-2xl font-bold text-gray-800 mt-1">
               ${totalHours > 0 ? Math.round(totalCost / totalHours).toLocaleString("es-CL") : "—"}
             </div>
@@ -117,10 +117,10 @@ export function LaborClient({ records: initial, cycles }: Props) {
       <Card>
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-            <Users className="w-4 h-4" /> Registros de mano de obra
+            <Users className="w-4 h-4" /> Labor records
           </CardTitle>
           <Button size="sm" onClick={() => setOpen(true)}>
-            <Plus className="w-4 h-4 mr-1.5" /> Agregar
+            <Plus className="w-4 h-4 mr-1.5" /> Add
           </Button>
         </CardHeader>
         <CardContent>
@@ -128,12 +128,12 @@ export function LaborClient({ records: initial, cycles }: Props) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-xs text-gray-400 border-b">
-                  <th className="text-left pb-2 font-medium">Fecha</th>
-                  <th className="text-left pb-2 font-medium">Actividad</th>
-                  <th className="text-left pb-2 font-medium">Lote</th>
-                  <th className="text-right pb-2 font-medium">Personas</th>
-                  <th className="text-right pb-2 font-medium">Horas</th>
-                  <th className="text-right pb-2 font-medium">Costo total</th>
+                  <th className="text-left pb-2 font-medium">Date</th>
+                  <th className="text-left pb-2 font-medium">Activity</th>
+                  <th className="text-left pb-2 font-medium">Lot</th>
+                  <th className="text-right pb-2 font-medium">Workers</th>
+                  <th className="text-right pb-2 font-medium">Hours</th>
+                  <th className="text-right pb-2 font-medium">Total cost</th>
                   <th className="pb-2"></th>
                 </tr>
               </thead>
@@ -141,7 +141,7 @@ export function LaborClient({ records: initial, cycles }: Props) {
                 {records.length === 0 && (
                   <tr>
                     <td colSpan={7} className="text-center py-10 text-gray-400">
-                      Sin registros. Agrega la primera jornada.
+                      No records. Add the first workday.
                     </td>
                   </tr>
                 )}
@@ -150,7 +150,7 @@ export function LaborClient({ records: initial, cycles }: Props) {
                   return (
                     <tr key={rec.id} className="hover:bg-gray-50">
                       <td className="py-2 text-gray-500 text-xs">
-                        {format(rec.date, "d MMM", { locale: es })}
+                        {format(rec.date, "d MMM", { locale: enUS })}
                       </td>
                       <td className="py-2">
                         <span className="flex items-center gap-1.5">
@@ -167,7 +167,7 @@ export function LaborClient({ records: initial, cycles }: Props) {
                         {cycle ? `${cycle.crop.variety} · ${cycle.crop.lot.name}` : "—"}
                       </td>
                       <td className="py-2 text-right text-gray-700">
-                        {rec.workerCount} personas
+                        {rec.workerCount} workers
                       </td>
                       <td className="py-2 text-right text-gray-700">
                         {rec.totalHours}h
@@ -206,12 +206,12 @@ export function LaborClient({ records: initial, cycles }: Props) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Registrar jornada</DialogTitle>
+            <DialogTitle>Register workday</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs">Ciclo / Lote</Label>
+                <Label className="text-xs">Cycle / Lot</Label>
                 <Select value={form.productionCycleId} onValueChange={(v) => setForm((f) => ({ ...f, productionCycleId: v }))}>
                   <SelectTrigger className="mt-1 h-8 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -224,14 +224,14 @@ export function LaborClient({ records: initial, cycles }: Props) {
                 </Select>
               </div>
               <div>
-                <Label className="text-xs">Fecha</Label>
+                <Label className="text-xs">Date</Label>
                 <Input type="date" className="mt-1 h-8 text-sm" value={form.date}
                   onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
               </div>
             </div>
 
             <div>
-              <Label className="text-xs">Actividad</Label>
+              <Label className="text-xs">Activity</Label>
               <Select value={form.activity} onValueChange={(v) => setForm((f) => ({ ...f, activity: v }))}>
                 <SelectTrigger className="mt-1 h-8 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -244,12 +244,12 @@ export function LaborClient({ records: initial, cycles }: Props) {
 
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <Label className="text-xs">N° personas</Label>
+                <Label className="text-xs"># workers</Label>
                 <Input type="number" className="mt-1 h-8 text-sm" placeholder="0"
                   value={form.workerCount} onChange={(e) => setForm((f) => ({ ...f, workerCount: e.target.value }))} />
               </div>
               <div>
-                <Label className="text-xs">Horas/persona</Label>
+                <Label className="text-xs">Hours/worker</Label>
                 <Input type="number" className="mt-1 h-8 text-sm"
                   value={form.hoursPerWorker} onChange={(e) => setForm((f) => ({ ...f, hoursPerWorker: e.target.value }))} />
               </div>
@@ -262,21 +262,21 @@ export function LaborClient({ records: initial, cycles }: Props) {
 
             {estimatedTotal !== null && (
               <p className="text-xs text-blue-600 font-medium">
-                Total estimado: ${estimatedTotal.toLocaleString("es-CL")} CLP
-                ({Number(form.workerCount) * Number(form.hoursPerWorker)}h totales)
+                Estimated total: ${estimatedTotal.toLocaleString("es-CL")} CLP
+                ({Number(form.workerCount) * Number(form.hoursPerWorker)}h total)
               </p>
             )}
 
             <div>
-              <Label className="text-xs">Notas (opcional)</Label>
-              <Input className="mt-1 h-8 text-sm" placeholder="Descripción de la jornada"
+              <Label className="text-xs">Notes (optional)</Label>
+              <Input className="mt-1 h-8 text-sm" placeholder="Workday description"
                 value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
             </div>
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" size="sm" onClick={() => setOpen(false)}>Cancelar</Button>
+            <Button variant="outline" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
             <Button size="sm" onClick={handleAdd} disabled={loading || !form.workerCount}>
-              {loading ? "Guardando..." : "Guardar"}
+              {loading ? "Saving..." : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>

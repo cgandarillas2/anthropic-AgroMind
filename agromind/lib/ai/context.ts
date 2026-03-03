@@ -1,13 +1,13 @@
 /**
- * Construye el contexto agronómico completo para el agente IA.
- * Incluye datos del predio, ciclos activos, clima reciente y costos.
+ * Builds complete agronomic context for AI agent.
+ * Includes farm data, active cycles, recent weather and costs.
  */
 
 import { db } from "@/lib/db";
 import { fetchWeather } from "@/lib/weather/open-meteo";
 import { detectarRiesgos } from "@/lib/weather/indicators";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { enUS } from "date-fns/locale";
 import { ESTADO_FENOLOGICO_LABELS, DESTINO_LABELS } from "@/types";
 
 export async function buildAgronomicContext(clerkId: string): Promise<string> {
@@ -34,11 +34,11 @@ export async function buildAgronomicContext(clerkId: string): Promise<string> {
     },
   });
 
-  if (!farm) return "Sin datos de predio disponibles.";
+  if (!farm) return "No farm data available.";
 
-  const today = format(new Date(), "d 'de' MMMM 'de' yyyy", { locale: es });
+  const today = format(new Date(), "MMMM d, yyyy", { locale: enUS });
 
-  // Clima actual
+  // Current weather
   let weatherContext = "";
   try {
     const weather = await fetchWeather(farm.latitude, farm.longitude);
@@ -51,28 +51,28 @@ export async function buildAgronomicContext(clerkId: string): Promise<string> {
     );
 
     weatherContext = `
-## Condiciones climáticas actuales (${today})
-- Temperatura: ${weather.current.tempC.toFixed(1)}°C
-- Humedad relativa: ${weather.current.humidity}%
-- Precipitación: ${weather.current.precipMm} mm
-- Viento: ${weather.current.windSpeedKmh.toFixed(0)} km/h
+## Current Weather Conditions (${today})
+- Temperature: ${weather.current.tempC.toFixed(1)}°C
+- Relative humidity: ${weather.current.humidity}%
+- Precipitation: ${weather.current.precipMm} mm
+- Wind: ${weather.current.windSpeedKmh.toFixed(0)} km/h
 
-### Pronóstico 7 días:
+### 7-Day Forecast:
 ${weather.forecast
   .slice(0, 7)
   .map(
     (d) =>
-      `- ${d.date}: max ${d.tempMaxC.toFixed(1)}°C / min ${d.tempMinC.toFixed(1)}°C, lluvia ${d.precipMm.toFixed(1)}mm${d.riesgoHelada ? " ⚠️HELADA" : ""}${d.riesgoLluvia ? " ⚠️LLUVIA" : ""}${d.riesgoCalor ? " ⚠️CALOR" : ""}`
+      `- ${d.date}: max ${d.tempMaxC.toFixed(1)}°C / min ${d.tempMinC.toFixed(1)}°C, rain ${d.precipMm.toFixed(1)}mm${d.riesgoHelada ? " ⚠️FROST" : ""}${d.riesgoLluvia ? " ⚠️RAIN" : ""}${d.riesgoCalor ? " ⚠️HEAT" : ""}`
   )
   .join("\n")}
 
-### Riesgos detectados: ${riesgos.length === 0 ? "Ninguno" : ""}
+### Detected Risks: ${riesgos.length === 0 ? "None" : ""}
 ${riesgos.map((r) => `- [${r.severidad}] ${r.titulo}: ${r.recomendacion}`).join("\n")}`;
   } catch {
-    weatherContext = "## Clima: No disponible en este momento.";
+    weatherContext = "## Weather: Not available at this time.";
   }
 
-  // Ciclos activos
+  // Active cycles
   const ciclos = farm.lots.flatMap((l) =>
     l.crops.flatMap((c) =>
       c.productionCycles.map((cy) => ({
@@ -90,70 +90,70 @@ ${riesgos.map((r) => `- [${r.severidad}] ${r.titulo}: ${r.recomendacion}`).join(
       const costoLabor = cy.laborRecords.reduce((s, l) => s + l.totalCost, 0);
       const ultimosInsumos = cy.inputs
         .slice(0, 5)
-        .map((i) => `  * ${format(i.date, "d MMM", { locale: es })}: ${i.name} (${i.quantity}${i.unit}) — $${i.totalCost.toLocaleString("es-CL")}`)
+        .map((i) => `  * ${format(i.date, "MMM d", { locale: enUS })}: ${i.name} (${i.quantity}${i.unit}) — $${i.totalCost.toLocaleString("en-US")}`)
         .join("\n");
       const ultimaLabor = cy.laborRecords
         .slice(0, 5)
-        .map((l) => `  * ${format(l.date, "d MMM", { locale: es })}: ${l.activity} — ${l.workerCount} personas × ${l.hoursPerWorker}h`)
+        .map((l) => `  * ${format(l.date, "MMM d", { locale: enUS })}: ${l.activity} — ${l.workerCount} workers × ${l.hoursPerWorker}h`)
         .join("\n");
 
       return `
-### Ciclo: ${cy.variedad} · ${cy.loteNombre} (${cy.loteArea} ha)
-- Temporada: ${cy.season}
-- Estado fenológico: ${ESTADO_FENOLOGICO_LABELS[cy.estadoFenologico]}
-- Horas frío acumuladas: ${cy.horasFrioAcumuladas}h (meta: 800h)
-- Calibre estimado: ${cy.calibreEstimado?.toFixed(1) ?? "No definido"} mm
-- Rendimiento estimado: ${cy.rendimientoEstimado ? `${(cy.rendimientoEstimado / 1000).toFixed(1)} t/ha` : "No definido"}
-- Fecha cosecha estimada: ${cy.fechaCosechaEstimada ? format(cy.fechaCosechaEstimada, "d MMM yyyy", { locale: es }) : "No definida"}
-- Destino: ${DESTINO_LABELS[cy.destinoProduccion]}
-- Costo insumos acumulado: $${costoInsumos.toLocaleString("es-CL")} CLP
-- Costo mano de obra: $${costoLabor.toLocaleString("es-CL")} CLP
-- Costo total: $${(costoInsumos + costoLabor).toLocaleString("es-CL")} CLP (${Math.round((costoInsumos + costoLabor) / cy.loteArea / 1000)}k CLP/ha)
-${cy.notas ? `- Notas del agrónomo: ${cy.notas}` : ""}
+### Cycle: ${cy.variedad} · ${cy.loteNombre} (${cy.loteArea} ha)
+- Season: ${cy.season}
+- Phenological stage: ${ESTADO_FENOLOGICO_LABELS[cy.estadoFenologico]}
+- Accumulated chill hours: ${cy.horasFrioAcumuladas}h (target: 800h)
+- Estimated size: ${cy.calibreEstimado?.toFixed(1) ?? "Not defined"} mm
+- Estimated yield: ${cy.rendimientoEstimado ? `${(cy.rendimientoEstimado / 1000).toFixed(1)} t/ha` : "Not defined"}
+- Estimated harvest date: ${cy.fechaCosechaEstimada ? format(cy.fechaCosechaEstimada, "MMM d, yyyy", { locale: enUS }) : "Not defined"}
+- Destination: ${DESTINO_LABELS[cy.destinoProduccion]}
+- Accumulated input cost: $${costoInsumos.toLocaleString("en-US")} CLP
+- Labor cost: $${costoLabor.toLocaleString("en-US")} CLP
+- Total cost: $${(costoInsumos + costoLabor).toLocaleString("en-US")} CLP (${Math.round((costoInsumos + costoLabor) / cy.loteArea / 1000)}k CLP/ha)
+${cy.notas ? `- Agronomist notes: ${cy.notas}` : ""}
 
-Últimos insumos:
-${ultimosInsumos || "  (Sin registros recientes)"}
+Recent inputs:
+${ultimosInsumos || "  (No recent records)"}
 
-Últimas jornadas:
-${ultimaLabor || "  (Sin registros recientes)"}`;
+Recent labor:
+${ultimaLabor || "  (No recent records)"}`;
     })
     .join("\n");
 
-  // Historial climático reciente
+  // Recent weather history
   const climaHistorial =
     farm.weatherLogs.length > 0
       ? farm.weatherLogs
           .slice(0, 7)
           .map(
             (w) =>
-              `- ${format(w.timestamp, "d MMM", { locale: es })}: ${w.tempC.toFixed(1)}°C (min ${w.tempMinC?.toFixed(1) ?? "?"}°C / max ${w.tempMaxC?.toFixed(1) ?? "?"}°C), lluvia ${w.precipMm}mm`
+              `- ${format(w.timestamp, "MMM d", { locale: enUS })}: ${w.tempC.toFixed(1)}°C (min ${w.tempMinC?.toFixed(1) ?? "?"}°C / max ${w.tempMaxC?.toFixed(1) ?? "?"}°C), rain ${w.precipMm}mm`
           )
           .join("\n")
-      : "Sin historial climático registrado.";
+      : "No recorded weather history.";
 
-  // Alertas activas
+  // Active alerts
   const alertasContext =
     farm.alerts.length > 0
       ? farm.alerts
           .map((a) => `- [${a.severity}] ${a.title}: ${a.description.slice(0, 150)}...`)
           .join("\n")
-      : "Sin alertas activas.";
+      : "No active alerts.";
 
-  return `# Contexto del predio — ${today}
+  return `# Farm Context — ${today}
 
-## Predio: ${farm.name}
-- Ubicación: ${farm.commune}, ${farm.region}, Chile
-- Coordenadas: ${farm.latitude.toFixed(4)}°S, ${Math.abs(farm.longitude).toFixed(4)}°O
-- Superficie total: ${farm.totalArea} ha
+## Farm: ${farm.name}
+- Location: ${farm.commune}, ${farm.region}, Chile
+- Coordinates: ${farm.latitude.toFixed(4)}°S, ${Math.abs(farm.longitude).toFixed(4)}°W
+- Total area: ${farm.totalArea} ha
 
 ${weatherContext}
 
-## Historial climático últimos 7 días:
+## Recent weather history (last 7 days):
 ${climaHistorial}
 
-## Ciclos productivos activos:
+## Active production cycles:
 ${ciclosContext}
 
-## Alertas activas:
+## Active alerts:
 ${alertasContext}`;
 }

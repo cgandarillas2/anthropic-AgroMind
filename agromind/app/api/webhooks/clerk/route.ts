@@ -1,6 +1,6 @@
 /**
- * Webhook de Clerk → sincroniza usuarios a la DB
- * Eventos: user.created, user.updated, user.deleted
+ * Clerk Webhook → synchronizes users to DB
+ * Events: user.created, user.updated, user.deleted
  */
 import { db } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";

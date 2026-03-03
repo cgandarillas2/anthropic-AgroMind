@@ -9,9 +9,9 @@ import { RiskBanners } from "@/components/weather/risk-banners";
 import { ColdHoursCard } from "@/components/weather/cold-hours-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { enUS } from "date-fns/locale";
 
-export const revalidate = 1800; // revalidar cada 30 min
+export const revalidate = 1800; // revalidate every 30 min
 
 async function getWeatherData(clerkId: string) {
   const farm = await db.farm.findFirst({
@@ -69,25 +69,25 @@ export default async function WeatherPage() {
   if (!data) {
     return (
       <div className="text-center py-20 text-gray-400">
-        No hay predio registrado.{" "}
+        No farm registered.{" "}
         <a href="/farms/new" className="text-green-600 underline">
-          Crear predio
+          Create farm
         </a>
       </div>
     );
   }
 
   const { farm, weather, ciclosActivos, riesgos } = data;
-  const ahora = format(new Date(), "d 'de' MMMM, HH:mm'h'", { locale: es });
+  const ahora = format(new Date(), "MMMM d, HH:mm'h'", { locale: enUS });
 
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Clima</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Weather</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {farm.commune}, {farm.region} · Actualizado {ahora}
+            {farm.commune}, {farm.region} · Updated {ahora}
           </p>
         </div>
         <div className="text-xs text-gray-400 text-right">
@@ -96,14 +96,14 @@ export default async function WeatherPage() {
         </div>
       </div>
 
-      {/* Alertas de riesgo — van primero si hay críticas */}
+      {/* Risk alerts — critical ones go first */}
       {riesgos.some((r) => r.severidad === "CRITICA") && (
         <RiskBanners riesgos={riesgos.filter((r) => r.severidad === "CRITICA")} />
       )}
 
-      {/* Grid principal */}
+      {/* Main grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Clima actual — ocupa 2 columnas */}
+        {/* Current weather — takes 2 columns */}
         <div className="md:col-span-2">
           <CurrentWeatherCard
             weather={weather.current}
@@ -112,7 +112,7 @@ export default async function WeatherPage() {
           />
         </div>
 
-        {/* Horas frío por ciclo */}
+        {/* Cold hours per cycle */}
         <div className="space-y-3">
           {ciclosActivos.slice(0, 2).map((ciclo) => (
             <ColdHoursCard
@@ -125,30 +125,30 @@ export default async function WeatherPage() {
         </div>
       </div>
 
-      {/* Pronóstico 7 días */}
+      {/* 7-day forecast */}
       <ForecastStrip forecast={weather.forecast} />
 
-      {/* Alertas de advertencia/info */}
+      {/* Warning/info alerts */}
       {riesgos.filter((r) => r.severidad !== "CRITICA").length > 0 && (
         <div>
           <h2 className="text-sm font-semibold text-gray-700 mb-3">
-            Alertas y recomendaciones
+            Alerts and recommendations
           </h2>
           <RiskBanners riesgos={riesgos.filter((r) => r.severidad !== "CRITICA")} />
         </div>
       )}
 
-      {/* Sin riesgos */}
+      {/* No risks */}
       {riesgos.length === 0 && (
         <RiskBanners riesgos={[]} />
       )}
 
-      {/* Historial climático reciente */}
+      {/* Recent weather history */}
       {farm.weatherLogs.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-semibold text-gray-700">
-              Historial últimos 7 días
+              Last 7 days history
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -156,19 +156,19 @@ export default async function WeatherPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-xs text-gray-400 border-b">
-                    <th className="text-left pb-2">Fecha</th>
-                    <th className="text-right pb-2">T° media</th>
-                    <th className="text-right pb-2">T° min</th>
-                    <th className="text-right pb-2">T° max</th>
-                    <th className="text-right pb-2">Lluvia</th>
-                    <th className="text-right pb-2">HR%</th>
+                    <th className="text-left pb-2">Date</th>
+                    <th className="text-right pb-2">Avg T°</th>
+                    <th className="text-right pb-2">Min T°</th>
+                    <th className="text-right pb-2">Max T°</th>
+                    <th className="text-right pb-2">Rain</th>
+                    <th className="text-right pb-2">RH%</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {farm.weatherLogs.map((log) => (
                     <tr key={log.id} className="text-gray-700">
                       <td className="py-1.5 text-gray-500 text-xs">
-                        {format(log.timestamp, "dd MMM", { locale: es })}
+                        {format(log.timestamp, "MMM dd", { locale: enUS })}
                       </td>
                       <td className="text-right font-medium">{log.tempC.toFixed(1)}°</td>
                       <td className="text-right text-blue-600">

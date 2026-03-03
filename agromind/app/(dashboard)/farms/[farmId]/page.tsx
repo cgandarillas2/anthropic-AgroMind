@@ -62,7 +62,7 @@ export default async function FarmDetailPage({
           href="/farms"
           className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1 mb-3"
         >
-          <ArrowLeft className="h-4 w-4" /> Todos los predios
+          <ArrowLeft className="h-4 w-4" /> All Farms
         </Link>
         <h1 className="text-2xl font-bold text-gray-900">{farm.name}</h1>
         <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5">
@@ -75,25 +75,25 @@ export default async function FarmDetailPage({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card>
           <CardContent className="pt-4 pb-3">
-            <p className="text-xs text-gray-500">Superficie</p>
+            <p className="text-xs text-gray-500">Area</p>
             <p className="text-xl font-bold text-gray-900">{farm.totalArea} ha</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3">
-            <p className="text-xs text-gray-500">Lotes</p>
+            <p className="text-xs text-gray-500">Lots</p>
             <p className="text-xl font-bold text-gray-900">{totalLots}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3">
-            <p className="text-xs text-gray-500">Cultivos</p>
+            <p className="text-xs text-gray-500">Crops</p>
             <p className="text-xl font-bold text-gray-900">{totalCrops}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3">
-            <p className="text-xs text-gray-500">Ciclos activos</p>
+            <p className="text-xs text-gray-500">Active Cycles</p>
             <p className="text-xl font-bold text-green-600">{activeCycles.length}</p>
           </CardContent>
         </Card>
@@ -101,7 +101,7 @@ export default async function FarmDetailPage({
 
       {/* Coordinates */}
       <p className="text-xs text-gray-400">
-        Coordenadas: {farm.latitude.toFixed(6)}, {farm.longitude.toFixed(6)}
+        Coordinates: {farm.latitude.toFixed(6)}, {farm.longitude.toFixed(6)}
       </p>
 
       {/* Active alerts */}
@@ -109,7 +109,7 @@ export default async function FarmDetailPage({
         <div className="space-y-2">
           <h2 className="font-semibold text-gray-800 flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-500" />
-            Alertas activas
+            Active Alerts
           </h2>
           <div className="space-y-2">
             {farm.alerts.map((alert) => (
@@ -134,12 +134,12 @@ export default async function FarmDetailPage({
       <div className="space-y-3">
         <h2 className="font-semibold text-gray-800 flex items-center gap-2">
           <Layers className="h-4 w-4 text-gray-500" />
-          Lotes y cultivos
+          Lots and Crops
         </h2>
         {farm.lots.length === 0 ? (
           <Card className="border-dashed">
             <CardContent className="py-8 text-center text-sm text-gray-400">
-              Sin lotes registrados para este predio.
+              No lots registered for this farm.
             </CardContent>
           </Card>
         ) : (
@@ -156,7 +156,7 @@ export default async function FarmDetailPage({
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {lot.crops.length === 0 ? (
-                    <p className="text-xs text-gray-400">Sin cultivos</p>
+                    <p className="text-xs text-gray-400">No crops</p>
                   ) : (
                     lot.crops.map((crop) => (
                       <div key={crop.id} className="border rounded-lg p-2 space-y-1">
@@ -166,7 +166,7 @@ export default async function FarmDetailPage({
                           <span className="text-xs text-gray-400">/ {crop.rootstock}</span>
                         </div>
                         <p className="text-xs text-gray-500">
-                          Plantado: {crop.plantYear} · {crop.density} plantas/ha
+                          Planted: {crop.plantYear} · {crop.density} plants/ha
                         </p>
                         {crop.productionCycles.map((cycle) => (
                           <div
@@ -178,7 +178,7 @@ export default async function FarmDetailPage({
                             </span>
                             {cycle.horasFrioAcumuladas != null && (
                               <span className="ml-2 text-green-600">
-                                · {cycle.horasFrioAcumuladas}h frío
+                                · {cycle.horasFrioAcumuladas}h chill
                               </span>
                             )}
                           </div>

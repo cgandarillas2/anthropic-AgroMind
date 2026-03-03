@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = CreateInputSchema.parse(await req.json());
 
-    // Verificar propiedad del ciclo
+    // Verify cycle ownership
     const cycle = await db.productionCycle.findFirst({
       where: { id: body.productionCycleId, crop: { lot: { farm: { owner: { clerkId: userId } } } } },
     });

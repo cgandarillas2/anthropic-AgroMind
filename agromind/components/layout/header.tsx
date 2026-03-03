@@ -34,7 +34,7 @@ export async function Header() {
   return (
     <header className="h-14 bg-white border-b border-gray-200 px-6 flex items-center justify-between flex-shrink-0">
       <div className="text-sm text-gray-500">
-        Región del Maule — Curicó
+        Maule Region — Curicó
       </div>
 
       <div className="flex items-center gap-4">

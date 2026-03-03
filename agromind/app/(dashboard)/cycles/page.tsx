@@ -44,21 +44,21 @@ export default async function CyclesPage() {
   if (!userId) redirect("/sign-in");
 
   const data = await getData(userId);
-  if (!data) return <div className="text-gray-400 py-20 text-center">Sin predio registrado.</div>;
+  if (!data) return <div className="text-gray-400 py-20 text-center">No farm registered.</div>;
 
   const { farm, cycles } = data;
 
   return (
     <div className="max-w-4xl space-y-4">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Ciclo activo</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Active cycle</h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          {farm.name} · {cycles.length} ciclo(s) activo(s)
+          {farm.name} · {cycles.length} active cycle(s)
         </p>
       </div>
 
       {cycles.length === 0 && (
-        <div className="text-center py-20 text-gray-400">No hay ciclos activos.</div>
+        <div className="text-center py-20 text-gray-400">No active cycles.</div>
       )}
 
       {cycles.length === 1 && <CycleEditor cycle={cycles[0]} />}
