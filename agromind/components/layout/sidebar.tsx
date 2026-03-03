@@ -11,6 +11,7 @@ import {
   FlaskConical,
   Users,
   Bot,
+  BarChart2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
   { href: "/alerts", label: "Alertas", icon: BellRing },
   { href: "/inputs", label: "Insumos", icon: FlaskConical },
   { href: "/labor", label: "Mano de obra", icon: Users },
+  { href: "/finance", label: "Finanzas", icon: BarChart2 },
   { href: "/ai-agent", label: "Agente IA", icon: Bot },
 ];
 
