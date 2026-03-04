@@ -2,7 +2,58 @@ import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { fetchWeather } from "@/lib/weather/open-meteo";
-import { detectarRiesgos } from "@/lib/weather/indicators";
+import { detectarRiesgos, type RiesgoDetectado } from "@/lib/weather/indicators";
+import type { AlertType } from "@prisma/client";
+
+const TRIGGER_METRIC: Record<RiesgoDetectado["tipo"], string> = {
+  HELADA:              "temperatura_minima",
+  LLUVIA_COSECHA:      "precipitacion_mm",
+  GOLPE_CALOR:         "temperatura_maxima",
+  VIENTO_FUERTE:       "velocidad_viento_kmh",
+  HUMEDAD_ALTA:        "humedad_relativa_pct",
+  DEFICIT_HORAS_FRIO:  "horas_frio_acumuladas",
+};
+
+/**
+ * Persists detected risks as Alert records.
+ * Skips if an unresolved alert of the same type was already created today.
+ */
+async function persistirAlertas(farmId: string, riesgos: RiesgoDetectado[]) {
+  if (!riesgos.length) return;
+
+  const hoyInicio = new Date();
+  hoyInicio.setHours(0, 0, 0, 0);
+
+  // Fetch existing unresolved alerts created today to avoid duplicates
+  const existentes = await db.alert.findMany({
+    where: {
+      farmId,
+      isResolved: false,
+      createdAt: { gte: hoyInicio },
+    },
+    select: { type: true },
+  });
+
+  const tiposExistentes = new Set(existentes.map((a) => a.type));
+
+  const nuevas = riesgos.filter((r) => !tiposExistentes.has(r.tipo as AlertType));
+
+  if (!nuevas.length) return;
+
+  await db.alert.createMany({
+    data: nuevas.map((r) => ({
+      farmId,
+      type:           r.tipo as AlertType,
+      severity:       r.severidad,
+      title:          r.titulo,
+      description:    r.descripcion,
+      recommendation: r.recomendacion,
+      triggerValue:   r.valorTrigger,
+      triggerMetric:  TRIGGER_METRIC[r.tipo],
+      source:         "AUTOMATICA",
+    })),
+  });
+}
 
 export async function GET(req: NextRequest) {
   const { userId } = await auth();
@@ -50,6 +101,9 @@ export async function GET(req: NextRequest) {
       cicloActivo?.horasFrioAcumuladas ?? 0,
       weatherData.current.humidity
     );
+
+    // Persist detected risks as alerts (fire-and-forget)
+    persistirAlertas(farm.id, riesgos).catch(console.error);
 
     // Save today's weather log in DB (fire-and-forget)
     const hoy = new Date();
