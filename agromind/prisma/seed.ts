@@ -2,10 +2,19 @@
  * AgroMind - Seed Script
  *
  * Test data: Cherry farm in Curicó, Maule Region.
- * 2 lots of 5 ha each, Regina variety, active cycle in
- * "CUAJA" (fruit set) stage, with records from the last 3 weeks.
+ * 2 lots of 5 ha each, Regina (Lot A) and Bing (Lot B).
  *
- * Seed reference date: 2025-01-04 (2024/2025 season)
+ * BASE_DATE is dynamic (today), so the data is always coherent
+ * with the current date. In March, cherries are in POSTCOSECHA.
+ *
+ * 2025/2026 season:
+ *  - Dormancy: Jun-Aug 2025
+ *  - Flowering: Oct 2025
+ *  - Fruit set: Nov 2025
+ *  - Fruit fill: Dec 2025 - Jan 2026
+ *  - Harvest Bing: Dec 28, 2025
+ *  - Harvest Regina: Jan 15, 2026
+ *  - Current stage: POSTCOSECHA (Feb-Mar 2026)
  */
 
 import * as dotenv from "dotenv";
@@ -27,13 +36,21 @@ import {
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
 
-// ─── Base dates (3 weeks ago from 2025-01-04) ───
-const BASE_DATE = new Date("2025-01-04T12:00:00-03:00");
+// ─── Base dates: always relative to TODAY ───────────────────────────
+const BASE_DATE = new Date(); // today, dynamic
+BASE_DATE.setHours(12, 0, 0, 0);
+
 const daysAgo = (d: number) =>
   new Date(BASE_DATE.getTime() - d * 24 * 60 * 60 * 1000);
 
+// Fixed past dates for key events in the 2025/2026 season
+const SEASON_START   = new Date("2025-08-01"); // cycle start (dormancy)
+const HARVEST_BING   = new Date("2025-12-28"); // Bing harvest (early variety)
+const HARVEST_REGINA = new Date("2026-01-15"); // Regina harvest (late variety)
+
 async function main() {
   console.log("🌱 Starting AgroMind seed...\n");
+  console.log(`📅 Base date (today): ${BASE_DATE.toLocaleDateString("en-US")}\n`);
 
   // ─────────────────────────────────────────────
   // 1. OWNER USER
@@ -51,8 +68,7 @@ async function main() {
   console.log(`✅ User created: ${user.name}`);
 
   // ─────────────────────────────────────────────
-  // 2. FARM - Fundo Los Ciruelos, Curicó
-  //    Real coordinates: south of Curicó (~34.97°S, 71.23°W)
+  // 2. FARM - Fundo Los Nogales, Curicó
   // ─────────────────────────────────────────────
   const farm = await prisma.farm.upsert({
     where: { id: "farm_curico_001" },
@@ -103,7 +119,7 @@ async function main() {
 
   // ─────────────────────────────────────────────
   // 4. CROPS
-  //    Lot A: Regina (late variety, better caliber, premium export)
+  //    Lot A: Regina (late variety, best caliber, premium export)
   //    Lot B: Bing (early variety, local market + export)
   // ─────────────────────────────────────────────
   const cropA = await prisma.crop.upsert({
@@ -138,205 +154,209 @@ async function main() {
   );
 
   // ─────────────────────────────────────────────
-  // 5. ACTIVE PRODUCTION CYCLES (2024/2025 season)
-  //    Stage: CUAJA → fruit set, moving to filling
-  //    Chill hours: Regina accumulated 847h (target met)
-  //    Estimated caliber: 28-30mm (export JJ/J)
+  // 5. ACTIVE PRODUCTION CYCLES (2025/2026 season)
+  //    Current stage: POSTCOSECHA (Feb-Mar 2026)
+  //    Harvest completed:
+  //      - Bing: December 28, 2025
+  //      - Regina: January 15, 2026
+  //    Chill hours met: 847h (Regina) / 823h (Bing)
+  //    Achieved caliber: 29.8mm (Regina) / 27.5mm (Bing)
   // ─────────────────────────────────────────────
   const cycleA = await prisma.productionCycle.upsert({
-    where: { id: "cycle_2024_A_regina" },
+    where: { id: "cycle_2025_A_regina" },
     update: {},
     create: {
-      id: "cycle_2024_A_regina",
-      season: "2024/2025",
-      startDate: new Date("2024-08-01"),
+      id: "cycle_2025_A_regina",
+      season: "2025/2026",
+      startDate: SEASON_START,
       isActive: true,
-      estadoFenologico: EstadoFenologico.CUAJA,
+      estadoFenologico: EstadoFenologico.POSTCOSECHA,
       horasFrioAcumuladas: 847,
-      calibreEstimado: 29.5, // mm - good caliber for export
-      rendimientoEstimado: 14200, // kg/ha (favorable season)
-      fechaCosechaEstimada: new Date("2025-01-20"),
+      calibreEstimado: 29.8, // mm — final achieved caliber
+      rendimientoEstimado: 13800, // kg/ha — final yield
+      fechaCosechaEstimada: HARVEST_REGINA, // Jan 15, 2026 (completed)
       destinoProduccion: DestinoProduccion.EXPORTACION,
       notas:
-        "Uniform flowering in October. Good pollination (2 hives/ha). Mild water stress week 48, corrected with irrigation.",
+        "2025/2026 season completed successfully. Harvest Jan 15, 2026: 13.8 t/ha, 78% JJ/J export caliber. Minor cracking due to Jan 12 rain (3.2mm) — covered by netting. Post-harvest pruning to begin in March.",
       cropId: cropA.id,
     },
   });
 
   const cycleB = await prisma.productionCycle.upsert({
-    where: { id: "cycle_2024_B_bing" },
+    where: { id: "cycle_2025_B_bing" },
     update: {},
     create: {
-      id: "cycle_2024_B_bing",
-      season: "2024/2025",
-      startDate: new Date("2024-08-01"),
+      id: "cycle_2025_B_bing",
+      season: "2025/2026",
+      startDate: SEASON_START,
       isActive: true,
-      estadoFenologico: EstadoFenologico.CUAJA,
+      estadoFenologico: EstadoFenologico.POSTCOSECHA,
       horasFrioAcumuladas: 823,
-      calibreEstimado: 27.8,
-      rendimientoEstimado: 12500,
-      fechaCosechaEstimada: new Date("2025-01-10"), // Bing ripens before Regina
+      calibreEstimado: 27.5, // mm — final achieved caliber
+      rendimientoEstimado: 12100, // kg/ha — final yield
+      fechaCosechaEstimada: HARVEST_BING, // Dec 28, 2025 (completed)
       destinoProduccion: DestinoProduccion.MIXTO,
       notas:
-        "Variety more sensitive to heat. Monitor caliber in January. Destination: 60% export, 40% domestic market.",
+        "2025/2026 season. Harvest Dec 28, 2025: 12.1 t/ha, 64% export (60% J, 4% JJ), 36% domestic market. Heat wave in Dec (3 days >36°C) reduced caliber 0.5mm vs projection. Planning: increase rain cover in Dec for next season.",
       cropId: cropB.id,
     },
   });
   console.log(
-    `✅ Active cycles: Regina (${cycleA.horasFrioAcumuladas}h chill) | Bing (${cycleB.horasFrioAcumuladas}h chill)`
+    `✅ Active cycles (POSTCOSECHA): Regina harvested ${HARVEST_REGINA.toLocaleDateString("en-US")} | Bing harvested ${HARVEST_BING.toLocaleDateString("en-US")}`
   );
 
   // ─────────────────────────────────────────────
-  // 6. INPUT RECORDS (last 3 weeks)
-  //    Reference: 2024-12-14 to 2025-01-04
+  // 6. INPUT RECORDS (last 3 weeks — post-harvest management)
+  //    Reference period: mid-Feb to early-Mar 2026
+  //    Focus: post-harvest fertilization, disease control, pruning prep
   // ─────────────────────────────────────────────
   const inputsData = [
-    // ── Week 1 (21-14 days ago) ──
+    // ── Week 1 (21-14 days ago) — early post-harvest ──
     {
       productionCycleId: cycleA.id,
       date: daysAgo(21),
       category: InputCategory.FUNGICIDA,
-      name: "Captan 80 WG",
-      quantity: 15,
-      unit: "kg",
-      costPerUnit: 8500,
-      totalCost: 127500,
-      supplier: "Anasac",
-      notes: "Applied due to forecast rain, brown rot prevention",
-    },
-    {
-      productionCycleId: cycleB.id,
-      date: daysAgo(21),
-      category: InputCategory.FUNGICIDA,
-      name: "Captan 80 WG",
-      quantity: 12,
-      unit: "kg",
-      costPerUnit: 8500,
-      totalCost: 102000,
-      supplier: "Anasac",
-      notes: "Same preventive treatment Lot B",
-    },
-    {
-      productionCycleId: cycleA.id,
-      date: daysAgo(18),
-      category: InputCategory.FERTILIZANTE,
-      name: "Nitrato de potasio (KNO₃)",
-      quantity: 80,
-      unit: "kg",
-      costPerUnit: 1200,
-      totalCost: 96000,
-      supplier: "Compo Chile",
-      notes: "Fertigation - fruit set stage, increases caliber and sweetness",
-    },
-    {
-      productionCycleId: cycleB.id,
-      date: daysAgo(18),
-      category: InputCategory.FERTILIZANTE,
-      name: "Nitrato de potasio (KNO₃)",
-      quantity: 65,
-      unit: "kg",
-      costPerUnit: 1200,
-      totalCost: 78000,
-      supplier: "Compo Chile",
-      notes: "Fertigation Lot B",
-    },
-    // ── Week 2 (13-7 days ago) ──
-    {
-      productionCycleId: cycleA.id,
-      date: daysAgo(14),
-      category: InputCategory.RIEGO,
-      name: "Irrigation water (m³)",
-      quantity: 2500,
-      unit: "m³",
-      costPerUnit: 45,
-      totalCost: 112500,
-      supplier: "Canal Curicó",
-      notes: "Drip irrigation, 500 m³/ha. Hot week (28-32°C)",
-    },
-    {
-      productionCycleId: cycleB.id,
-      date: daysAgo(14),
-      category: InputCategory.RIEGO,
-      name: "Irrigation water (m³)",
-      quantity: 2500,
-      unit: "m³",
-      costPerUnit: 45,
-      totalCost: 112500,
-      supplier: "Canal Curicó",
-      notes: "Drip irrigation Lot B",
-    },
-    {
-      productionCycleId: cycleA.id,
-      date: daysAgo(12),
-      category: InputCategory.INSECTICIDA,
-      name: "Clorpirifos 48% EC",
-      quantity: 5,
-      unit: "L",
-      costPerUnit: 9800,
-      totalCost: 49000,
-      supplier: "Dow Agrosciences",
-      notes: "Fruit fly control, trap detected action threshold",
-    },
-    {
-      productionCycleId: cycleA.id,
-      date: daysAgo(9),
-      category: InputCategory.FERTILIZANTE,
-      name: "Calcio foliar (CaCl₂ 10%)",
-      quantity: 50,
-      unit: "L",
-      costPerUnit: 1850,
-      totalCost: 92500,
-      supplier: "Yara Chile",
-      notes: "Foliar application prevents cracking during filling stage",
-    },
-    {
-      productionCycleId: cycleB.id,
-      date: daysAgo(9),
-      category: InputCategory.FERTILIZANTE,
-      name: "Calcio foliar (CaCl₂ 10%)",
-      quantity: 40,
-      unit: "L",
-      costPerUnit: 1850,
-      totalCost: 74000,
-      supplier: "Yara Chile",
-      notes: "Foliar application Lot B, priority due to Bing sensitivity to cracking",
-    },
-    // ── Week 3 (6-0 days ago) ──
-    {
-      productionCycleId: cycleA.id,
-      date: daysAgo(5),
-      category: InputCategory.FUNGICIDA,
-      name: "Fludioxonil 25 SC",
-      quantity: 8,
+      name: "Fludioxonil 25 SC (Switch)",
+      quantity: 6,
       unit: "L",
       costPerUnit: 32000,
-      totalCost: 256000,
+      totalCost: 192000,
       supplier: "Syngenta",
-      notes: "Preventive post-harvest treatment, high efficiency against botrytis",
+      notes: "Post-harvest wound treatment after pruning cuts — botrytis and Monilinia prevention",
+    },
+    {
+      productionCycleId: cycleB.id,
+      date: daysAgo(21),
+      category: InputCategory.FUNGICIDA,
+      name: "Fludioxonil 25 SC (Switch)",
+      quantity: 5,
+      unit: "L",
+      costPerUnit: 32000,
+      totalCost: 160000,
+      supplier: "Syngenta",
+      notes: "Post-harvest fungicide application Lot B",
+    },
+    {
+      productionCycleId: cycleA.id,
+      date: daysAgo(18),
+      category: InputCategory.FERTILIZANTE,
+      name: "Zinc sulfate (ZnSO₄ 21%)",
+      quantity: 30,
+      unit: "kg",
+      costPerUnit: 1400,
+      totalCost: 42000,
+      supplier: "Compo Chile",
+      notes: "Post-harvest foliar zinc — promotes flower bud differentiation for next season",
+    },
+    {
+      productionCycleId: cycleB.id,
+      date: daysAgo(18),
+      category: InputCategory.FERTILIZANTE,
+      name: "Zinc sulfate (ZnSO₄ 21%)",
+      quantity: 25,
+      unit: "kg",
+      costPerUnit: 1400,
+      totalCost: 35000,
+      supplier: "Compo Chile",
+      notes: "Post-harvest foliar zinc Lot B",
+    },
+    // ── Week 2 (13-7 days ago) — recovery fertilization ──
+    {
+      productionCycleId: cycleA.id,
+      date: daysAgo(14),
+      category: InputCategory.FERTILIZANTE,
+      name: "Urea 46%",
+      quantity: 120,
+      unit: "kg",
+      costPerUnit: 620,
+      totalCost: 74400,
+      supplier: "Yara Chile",
+      notes: "Post-harvest nitrogen fertigation — restores tree reserves after heavy crop load",
+    },
+    {
+      productionCycleId: cycleB.id,
+      date: daysAgo(14),
+      category: InputCategory.FERTILIZANTE,
+      name: "Urea 46%",
+      quantity: 100,
+      unit: "kg",
+      costPerUnit: 620,
+      totalCost: 62000,
+      supplier: "Yara Chile",
+      notes: "Post-harvest nitrogen fertigation Lot B",
+    },
+    {
+      productionCycleId: cycleA.id,
+      date: daysAgo(11),
+      category: InputCategory.RIEGO,
+      name: "Irrigation water (m³)",
+      quantity: 1800,
+      unit: "m³",
+      costPerUnit: 45,
+      totalCost: 81000,
+      supplier: "Canal Curicó",
+      notes: "Post-harvest irrigation to support foliar recovery and nutrient uptake",
+    },
+    {
+      productionCycleId: cycleB.id,
+      date: daysAgo(11),
+      category: InputCategory.RIEGO,
+      name: "Irrigation water (m³)",
+      quantity: 1800,
+      unit: "m³",
+      costPerUnit: 45,
+      totalCost: 81000,
+      supplier: "Canal Curicó",
+      notes: "Post-harvest irrigation Lot B",
+    },
+    // ── Week 3 (6-0 days ago) — pruning and next season prep ──
+    {
+      productionCycleId: cycleA.id,
+      date: daysAgo(6),
+      category: InputCategory.FERTILIZANTE,
+      name: "Boron (Solubor 20.5%)",
+      quantity: 12,
+      unit: "kg",
+      costPerUnit: 4200,
+      totalCost: 50400,
+      supplier: "Agrotec",
+      notes: "Foliar boron — critical for next season flower bud viability and pollen tube growth",
+    },
+    {
+      productionCycleId: cycleB.id,
+      date: daysAgo(6),
+      category: InputCategory.FERTILIZANTE,
+      name: "Boron (Solubor 20.5%)",
+      quantity: 10,
+      unit: "kg",
+      costPerUnit: 4200,
+      totalCost: 42000,
+      supplier: "Agrotec",
+      notes: "Foliar boron Lot B",
     },
     {
       productionCycleId: cycleA.id,
       date: daysAgo(3),
-      category: InputCategory.RIEGO,
-      name: "Irrigation water (m³)",
-      quantity: 2000,
-      unit: "m³",
-      costPerUnit: 45,
-      totalCost: 90000,
-      supplier: "Canal Curicó",
-      notes: "Strategic irrigation before Bing harvest",
+      category: InputCategory.FUNGICIDA,
+      name: "Copper hydroxide (Kocide 35 WG)",
+      quantity: 25,
+      unit: "kg",
+      costPerUnit: 3800,
+      totalCost: 95000,
+      supplier: "DuPont Chile",
+      notes: "Dormant copper spray — controls bacterial canker and wood diseases pre-pruning",
     },
     {
       productionCycleId: cycleB.id,
       date: daysAgo(3),
-      category: InputCategory.RIEGO,
-      name: "Irrigation water (m³)",
-      quantity: 2000,
-      unit: "m³",
-      costPerUnit: 45,
-      totalCost: 90000,
-      supplier: "Canal Curicó",
-      notes: "ATTENTION: Reduce or suspend irrigation 48h before harvest to minimize cracking",
+      category: InputCategory.FUNGICIDA,
+      name: "Copper hydroxide (Kocide 35 WG)",
+      quantity: 20,
+      unit: "kg",
+      costPerUnit: 3800,
+      totalCost: 76000,
+      supplier: "DuPont Chile",
+      notes: "Dormant copper spray Lot B",
     },
   ];
 
@@ -346,10 +366,10 @@ async function main() {
   console.log(`✅ ${inputsData.length} input records created`);
 
   // ─────────────────────────────────────────────
-  // 7. LABOR RECORDS (last 3 weeks)
+  // 7. LABOR RECORDS (last 3 weeks — post-harvest activities)
   // ─────────────────────────────────────────────
   const laborData = [
-    // Week 1
+    // Week 1 — wound treatment and foliar applications
     {
       productionCycleId: cycleA.id,
       date: daysAgo(20),
@@ -359,18 +379,18 @@ async function main() {
       totalHours: 32,
       costPerHour: 2800,
       totalCost: 89600,
-      notes: "Captan fungicide application, sprayer equipment",
+      notes: "Post-harvest fungicide application + foliar zinc, Lot A (5 ha)",
     },
     {
       productionCycleId: cycleB.id,
       date: daysAgo(20),
       activity: LaborActivity.APLICACION_FITOSANITARIA,
-      workerCount: 3,
+      workerCount: 4,
       hoursPerWorker: 8,
-      totalHours: 24,
+      totalHours: 32,
       costPerHour: 2800,
-      totalCost: 67200,
-      notes: "Fungicide application Lot B",
+      totalCost: 89600,
+      notes: "Post-harvest fungicide application + foliar zinc, Lot B (5 ha)",
     },
     {
       productionCycleId: cycleA.id,
@@ -381,97 +401,86 @@ async function main() {
       totalHours: 12,
       costPerHour: 3200,
       totalCost: 38400,
-      notes: "Fruit count per branch, caliber and load estimation",
+      notes: "Post-harvest damage assessment: sunburn evaluation, wood disease inspection, canker mapping",
     },
     {
       productionCycleId: cycleB.id,
       date: daysAgo(17),
       activity: LaborActivity.MONITOREO,
       workerCount: 2,
-      hoursPerWorker: 6,
-      totalHours: 12,
+      hoursPerWorker: 5,
+      totalHours: 10,
       costPerHour: 3200,
-      totalCost: 38400,
-      notes: "Lot B monitoring, fly trap placement",
+      totalCost: 32000,
+      notes: "Lot B damage assessment — Bing more affected by Dec heat wave, mapping weak wood zones",
     },
+    // Week 2 — pruning starts
     {
       productionCycleId: cycleA.id,
-      date: daysAgo(15),
+      date: daysAgo(13),
       activity: LaborActivity.RIEGO,
       workerCount: 2,
       hoursPerWorker: 4,
       totalHours: 8,
       costPerHour: 2500,
       totalCost: 20000,
-      notes: "Supervision and adjustment of blocked drippers",
+      notes: "Fertigation setup adjustment for urea application — dripper inspection",
     },
-    // Week 2
     {
       productionCycleId: cycleA.id,
-      date: daysAgo(11),
+      date: daysAgo(10),
+      activity: LaborActivity.PODA,
+      workerCount: 8,
+      hoursPerWorker: 9,
+      totalHours: 72,
+      costPerHour: 3500,
+      totalCost: 252000,
+      notes: "Post-harvest summer pruning Lot A — removal of water sprouts, crossing branches, epicormic growth",
+    },
+    {
+      productionCycleId: cycleB.id,
+      date: daysAgo(9),
+      activity: LaborActivity.PODA,
+      workerCount: 8,
+      hoursPerWorker: 9,
+      totalHours: 72,
+      costPerHour: 3500,
+      totalCost: 252000,
+      notes: "Post-harvest summer pruning Lot B — also removing heat-damaged wood identified in monitoring",
+    },
+    // Week 3 — copper spray and next season planning
+    {
+      productionCycleId: cycleA.id,
+      date: daysAgo(5),
       activity: LaborActivity.APLICACION_FITOSANITARIA,
       workerCount: 3,
       hoursPerWorker: 8,
       totalHours: 24,
       costPerHour: 2800,
       totalCost: 67200,
-      notes: "Insecticide + foliar calcium application",
+      notes: "Copper hydroxide + boron foliar application after pruning",
     },
     {
       productionCycleId: cycleB.id,
-      date: daysAgo(10),
-      activity: LaborActivity.INSTALACION_MALLA,
-      workerCount: 8,
-      hoursPerWorker: 9,
-      totalHours: 72,
-      costPerHour: 2600,
-      totalCost: 187200,
-      notes: "Hail and rain netting installation over Lot B",
-    },
-    {
-      productionCycleId: cycleA.id,
-      date: daysAgo(8),
-      activity: LaborActivity.RALEO,
-      workerCount: 6,
-      hoursPerWorker: 8,
-      totalHours: 48,
-      costPerHour: 2700,
-      totalCost: 129600,
-      notes: "Thinning of double and very small fruits to improve final caliber",
-    },
-    // Week 3
-    {
-      productionCycleId: cycleA.id,
-      date: daysAgo(6),
+      date: daysAgo(5),
       activity: LaborActivity.APLICACION_FITOSANITARIA,
-      workerCount: 4,
-      hoursPerWorker: 7,
-      totalHours: 28,
-      costPerHour: 2800,
-      totalCost: 78400,
-      notes: "Preventive Fludioxonil application",
-    },
-    {
-      productionCycleId: cycleB.id,
-      date: daysAgo(4),
-      activity: LaborActivity.MONITOREO,
       workerCount: 3,
-      hoursPerWorker: 5,
-      totalHours: 15,
-      costPerHour: 3200,
-      totalCost: 48000,
-      notes: "Maturity sampling: average Brix 16.2, caliber 27mm, 80% red color",
+      hoursPerWorker: 8,
+      totalHours: 24,
+      costPerHour: 2800,
+      totalCost: 67200,
+      notes: "Copper + boron application Lot B",
     },
     {
-      productionCycleId: cycleB.id,
+      productionCycleId: cycleA.id,
       date: daysAgo(2),
-      activity: LaborActivity.OTRO,
-      workerCount: 10,
-      hoursPerWorker: 3,
-      totalHours: 30,
-      costPerHour: 2500,
-      totalCost: 75000,
-      notes: "Preparation of bins and harvest material, scale calibration",
+      activity: LaborActivity.MONITOREO,
+      workerCount: 2,
+      hoursPerWorker: 4,
+      totalHours: 8,
+      costPerHour: 3200,
+      totalCost: 25600,
+      notes: "Leaf analysis sampling — sent to lab for N, P, K, Zn, B levels. Results expected in 10 days.",
     },
   ];
 
@@ -481,36 +490,36 @@ async function main() {
   console.log(`✅ ${laborData.length} labor records created`);
 
   // ─────────────────────────────────────────────
-  // 8. WEATHER RECORDS (last 3 weeks, daily)
-  //    Curicó, Maule: austral summer (December-January)
-  //    Typical range: 15-32°C, occasional rain, southern wind
+  // 8. WEATHER RECORDS (last 3 weeks)
+  //    Curicó, Maule: late summer / early autumn (Feb-Mar)
+  //    Typical: 15-28°C, some rain possible, humidity rising
   // ─────────────────────────────────────────────
   const weatherHistory = [
-    // Daily data: [daysAgo, avgTempC, tempMin, tempMax, precip, windKmh, humidity]
-    // Week 3 21 days ago (mid December)
-    { d: 21, tC: 22.4, tMin: 11.2, tMax: 31.8, p: 0, w: 18, h: 52 },
-    { d: 20, tC: 19.8, tMin: 10.5, tMax: 28.2, p: 0, w: 22, h: 58 },
-    { d: 19, tC: 17.2, tMin: 9.8, tMax: 23.5, p: 4.2, w: 15, h: 72 }, // light rain
-    { d: 18, tC: 18.5, tMin: 10.1, tMax: 25.8, p: 0, w: 12, h: 65 },
-    { d: 17, tC: 21.3, tMin: 12.4, tMax: 30.1, p: 0, w: 20, h: 55 },
-    { d: 16, tC: 24.6, tMin: 14.2, tMax: 34.5, p: 0, w: 25, h: 42 }, // heat
-    { d: 15, tC: 26.1, tMin: 15.8, tMax: 35.8, p: 0, w: 28, h: 38 }, // HEAT STRESS
-    // Week 2 (14-8 days ago, late December)
-    { d: 14, tC: 23.2, tMin: 13.5, tMax: 32.6, p: 0, w: 22, h: 45 },
-    { d: 13, tC: 21.8, tMin: 12.8, tMax: 30.4, p: 0, w: 18, h: 50 },
-    { d: 12, tC: 20.5, tMin: 11.9, tMax: 28.5, p: 1.8, w: 14, h: 60 },
-    { d: 11, tC: 22.9, tMin: 13.2, tMax: 31.2, p: 0, w: 16, h: 48 },
-    { d: 10, tC: 25.4, tMin: 14.8, tMax: 34.2, p: 0, w: 24, h: 40 }, // strong heat
-    { d: 9, tC: 27.3, tMin: 16.1, tMax: 36.4, p: 0, w: 30, h: 35 },  // HEAT STRESS
-    { d: 8, tC: 24.8, tMin: 14.5, tMax: 33.1, p: 0, w: 26, h: 42 },
-    // Week 1 (7-1 days ago, early January 2025)
-    { d: 7, tC: 22.1, tMin: 12.8, tMax: 30.5, p: 0, w: 20, h: 52 },
-    { d: 6, tC: 20.8, tMin: 11.5, tMax: 29.2, p: 0, w: 15, h: 55 },
-    { d: 5, tC: 23.5, tMin: 13.8, tMax: 32.4, p: 0, w: 22, h: 47 },
-    { d: 4, tC: 25.9, tMin: 15.2, tMax: 35.0, p: 0, w: 27, h: 40 }, // heat
-    { d: 3, tC: 28.4, tMin: 17.1, tMax: 38.2, p: 0, w: 32, h: 32 }, // HEAT WAVE
-    { d: 2, tC: 26.7, tMin: 16.4, tMax: 36.5, p: 0, w: 28, h: 36 }, // heat continues
-    { d: 1, tC: 22.3, tMin: 13.2, tMax: 31.8, p: 2.5, w: 18, h: 58 }, // light rain
+    // [daysAgo, avgTempC, tempMin, tempMax, precipMm, windKmh, humidity]
+    // Week 3 (21 days ago — mid Feb 2026)
+    { d: 21, tC: 22.1, tMin: 12.4, tMax: 30.5, p: 0,   w: 16, h: 48 },
+    { d: 20, tC: 21.3, tMin: 11.8, tMax: 29.2, p: 0,   w: 18, h: 52 },
+    { d: 19, tC: 19.5, tMin: 10.2, tMax: 26.8, p: 5.2, w: 12, h: 70 }, // light rain
+    { d: 18, tC: 18.8, tMin: 10.5, tMax: 25.4, p: 2.1, w: 10, h: 74 }, // rain continues
+    { d: 17, tC: 20.4, tMin: 11.3, tMax: 28.0, p: 0,   w: 14, h: 62 },
+    { d: 16, tC: 23.2, tMin: 13.1, tMax: 31.4, p: 0,   w: 22, h: 50 },
+    { d: 15, tC: 24.8, tMin: 14.2, tMax: 32.8, p: 0,   w: 26, h: 44 }, // warm day
+    // Week 2 (14-8 days ago — late Feb 2026)
+    { d: 14, tC: 22.5, tMin: 12.8, tMax: 30.1, p: 0,   w: 20, h: 50 },
+    { d: 13, tC: 20.9, tMin: 11.5, tMax: 28.4, p: 0,   w: 16, h: 55 },
+    { d: 12, tC: 19.2, tMin: 10.8, tMax: 26.2, p: 8.4, w: 11, h: 78 }, // significant rain
+    { d: 11, tC: 17.5, tMin:  9.2, tMax: 24.1, p: 3.6, w:  9, h: 82 }, // rain
+    { d: 10, tC: 19.8, tMin: 10.4, tMax: 27.5, p: 0,   w: 14, h: 65 },
+    { d:  9, tC: 21.4, tMin: 11.9, tMax: 29.2, p: 0,   w: 18, h: 58 },
+    { d:  8, tC: 20.2, tMin: 11.2, tMax: 28.0, p: 0,   w: 15, h: 60 },
+    // Week 1 (7-1 days ago — early Mar 2026)
+    { d:  7, tC: 18.8, tMin: 10.1, tMax: 26.4, p: 0,   w: 12, h: 62 },
+    { d:  6, tC: 19.5, tMin: 10.8, tMax: 27.1, p: 0,   w: 14, h: 60 },
+    { d:  5, tC: 17.4, tMin:  9.5, tMax: 24.2, p: 4.8, w: 10, h: 75 }, // rain — autumn approaching
+    { d:  4, tC: 16.8, tMin:  8.8, tMax: 23.5, p: 9.2, w:  8, h: 80 }, // moderate rain
+    { d:  3, tC: 18.2, tMin:  9.6, tMax: 25.4, p: 0,   w: 13, h: 68 },
+    { d:  2, tC: 20.1, tMin: 10.5, tMax: 27.8, p: 0,   w: 17, h: 55 },
+    { d:  1, tC: 19.6, tMin: 10.2, tMax: 26.9, p: 0,   w: 15, h: 57 },
   ];
 
   for (const w of weatherHistory) {
@@ -519,8 +528,8 @@ async function main() {
 
     const esBajoUmbralHelada = w.tMin < -1;
     const contribuyeHorasFrio = w.tC < 7;
-    // Rain in January period = harvest risk
-    const esRiesgoLluvia = w.p > 1 && w.d <= 7;
+    // In post-harvest period, rain is less critical (no fruit on tree)
+    const esRiesgoLluvia = w.p > 5 && w.d <= 7;
 
     // Approximate evapotranspiration (simplified Hargreaves)
     const etMm = Math.max(0, 0.0023 * (w.tC + 17.8) * Math.sqrt(w.tMax - w.tMin) * 8.5);
@@ -536,7 +545,7 @@ async function main() {
         tempMaxC: w.tMax,
         precipMm: w.p,
         windSpeedKmh: w.w,
-        windDirection: 185 + Math.floor(Math.random() * 30), // viento predominante del sur
+        windDirection: 185 + Math.floor(Math.random() * 30),
         humidity: w.h,
         etMm: Math.round(etMm * 10) / 10,
         esBajoUmbralHelada,
@@ -548,70 +557,64 @@ async function main() {
   console.log(`✅ ${weatherHistory.length} weather records created`);
 
   // ─────────────────────────────────────────────
-  // 9. ALERTS (generated by system and AI)
+  // 9. ALERTS (post-harvest management and next season planning)
   // ─────────────────────────────────────────────
   const alertsData = [
     {
       farmId: farm.id,
-      type: AlertType.GOLPE_CALOR,
-      severity: AlertSeverity.CRITICA,
-      title: "Heat wave - Risk of sunburn on fruit",
+      type: AlertType.GENERAL,
+      severity: AlertSeverity.ADVERTENCIA,
+      title: "Leaf analysis pending — adjust post-harvest fertilization",
       description:
-        "Maximum temperature reached 38.2°C on January 2nd. During fruit filling stage, temperatures above 35°C for more than 2 hours significantly reduce final caliber and can cause sunburn on the exposed face of the fruit.",
+        "Samples sent to lab on March 2nd. Lot B showed visual symptoms of zinc deficiency during final fruit fill (Dec 2025). Expected results in 10 days. Fertilization plan for next season should be adjusted based on results.",
       recommendation:
-        "Apply kaolin (Surround WP) 25 kg/ha as sun protector. Activate micro-sprinkler irrigation over canopy 2-3 times daily between 12:00 PM and 5:00 PM. Monitor temperature under canopy every 2 hours.",
-      triggerValue: 38.2,
-      triggerMetric: "temperatura_maxima_c",
-      source: AlertSource.AUTOMATICA,
+        "While waiting for lab results, continue foliar zinc applications (ZnSO₄ 30 kg/ha). If lab confirms deficiency, apply additional soil zinc chelate (EDTA) 15 kg/ha in April before dormancy sets in.",
+      source: AlertSource.IA,
       isRead: false,
       isResolved: false,
-      createdAt: daysAgo(3),
+      createdAt: daysAgo(2),
     },
     {
       farmId: farm.id,
-      type: AlertType.LLUVIA_COSECHA,
-      severity: AlertSeverity.ADVERTENCIA,
-      title: "Rain detected - Risk of cracking in Bing",
+      type: AlertType.GENERAL,
+      severity: AlertSeverity.INFO,
+      title: "Post-harvest pruning completion — 90% done",
       description:
-        "2.5 mm of rain were recorded on January 3rd. With Bing close to harvest (estimated Jan 10), any precipitation increases osmotic pressure and causes cracking of the epicarp, especially in calibers over 28mm.",
+        "Summer pruning completed on both lots (Feb 23-24, 2026). Lot A (Regina): good canopy structure, minimal corrective work needed. Lot B (Bing): removed 15% more wood than planned due to heat-damaged and crossing branches. Tree skeleton in good condition for next season.",
       recommendation:
-        "Check rain netting on Lot B and ensure runoff. Advance maturity evaluation to Jan 5. If Brix ≥ 16.5 and color ≥ 85% red, consider early harvest to avoid second forecast rain.",
-      triggerValue: 2.5,
-      triggerMetric: "precipitacion_mm",
+        "Complete wound sealing on Bing cuts >3cm with copper-based paste (Arbocel or similar). Schedule dormancy pruning for June 2026 to finalize canopy structure. Document removed wood volume for carbon tracking.",
       source: AlertSource.IA,
       isRead: true,
-      isResolved: false,
-      createdAt: daysAgo(1),
-    },
-    {
-      farmId: farm.id,
-      type: AlertType.GOLPE_CALOR,
-      severity: AlertSeverity.ADVERTENCIA,
-      title: "Sustained critical temperature - Possible reduction in Regina caliber",
-      description:
-        "Accumulation of 4 consecutive days above 34°C (week of Dec 27-30). Estimated impact on Regina final caliber: reduction of 0.8-1.2mm from initial projection. Revised estimated caliber: 28.3mm (down from 29.5mm).",
-      recommendation:
-        "Increase KNO₃ fertigation dose to 120 kg/ha in next application. Evaluate foliar application of gibberellic acid (ProGibb 40%) 15 ppm to compensate caliber reduction. Contact packing company to adjust JJ category volume projection.",
-      triggerValue: 36.4,
-      triggerMetric: "temperatura_maxima_c",
-      source: AlertSource.IA,
-      isRead: false,
       isResolved: false,
       createdAt: daysAgo(5),
     },
     {
       farmId: farm.id,
       type: AlertType.GENERAL,
-      severity: AlertSeverity.INFO,
-      title: "AI weekly report - Week of Dec 28 to Jan 4",
+      severity: AlertSeverity.CRITICA,
+      title: "Dormancy preparation — chill hour accumulation window opens in May",
       description:
-        "General farm status: GOOD with observations. Both lots completed fruit set stage with good uniformity. Lot A (Regina): estimated load 14.2 t/ha, projected caliber 28-30mm, color developing. Lot B (Bing): estimated load 12.5 t/ha, caliber 27-28mm, advanced maturity. Sufficient accumulated chill hours for both varieties. Main current risk: ongoing heat wave.",
+        "Target: 800h below 7°C for both Regina and Bing. Chill accumulation season begins May 2026 in Curicó. Last season: Regina reached 847h, Bing 823h (both adequate). Weather forecast indicates a warmer-than-normal autumn (El Niño influence) — chill hour target may be at risk.",
       recommendation:
-        "Priority 1: Heat management (see critical alert). Priority 2: Prepare Bing harvest logistics for week of Jan 6-10. Priority 3: Hire harvest crew (40 people/day, 3-4 days). Start coordination with packing.",
+        "Plan evaporative cooling application (hydrogen cyanamide 0.5-1%) for late July if chill hour deficit exceeds 150h. Confirm dormancy-break protocol with agronomist by June 15. Monitor min temperatures from May 1 with automatic station.",
       source: AlertSource.IA,
       isRead: false,
       isResolved: false,
       createdAt: daysAgo(0),
+    },
+    {
+      farmId: farm.id,
+      type: AlertType.GENERAL,
+      severity: AlertSeverity.INFO,
+      title: "Season 2025/2026 final report — results above target",
+      description:
+        "Season closed successfully. Regina Lot A: 13.8 t/ha (target 14 t/ha), 78% export JJ/J, income ~$42M CLP/ha. Bing Lot B: 12.1 t/ha (target 12 t/ha), 64% export, income ~$28M CLP/ha. Heat wave in December reduced Bing caliber by 0.5mm vs projection. Rain netting on Lot B proved effective (cracking <2%).",
+      recommendation:
+        "Key improvements for 2026/2027: (1) Install rain cover on Lot A (Regina) before December harvest. (2) Add over-canopy cooling system for Bing in heat event protocol. (3) Increase Bing rain netting coverage to 100% vs current 70%.",
+      source: AlertSource.IA,
+      isRead: false,
+      isResolved: false,
+      createdAt: daysAgo(7),
     },
   ];
 
@@ -623,34 +626,21 @@ async function main() {
   // ─────────────────────────────────────────────
   // FINAL SUMMARY
   // ─────────────────────────────────────────────
-  console.log("\n" + "─".repeat(50));
+  console.log("\n" + "─".repeat(55));
   console.log("🎉 Seed completed successfully!\n");
   console.log("📊 Dataset summary:");
   console.log(`   User:    ${user.name}`);
-  console.log(`   Farm:     ${farm.name}, ${farm.commune}`);
-  console.log(
-    `   Area: ${farm.totalArea} ha total (10 ha cherries)`
-  );
-  console.log(
-    `   Lots:      2 × 5 ha (Regina Lot A | Bing Lot B)`
-  );
-  console.log(`   Season:  2024/2025 - Stage: CUAJA → FILLING`);
-  console.log(
-    `   Inputs:    ${inputsData.length} records`
-  );
-  console.log(
-    `   Labor:      ${laborData.length} records`
-  );
-  console.log(
-    `   Weather:      ${weatherHistory.length} days (3 weeks)`
-  );
-  console.log(
-    `   Alerts:    ${alertsData.length} (1 critical, 2 warnings, 1 info)`
-  );
-  console.log("─".repeat(50));
-  console.log(
-    "\n🔑 Test login (Clerk): carlos.fuentes@agromind.cl"
-  );
+  console.log(`   Farm:    ${farm.name}, ${farm.commune}`);
+  console.log(`   Area:    ${farm.totalArea} ha total (10 ha cherries)`);
+  console.log(`   Lots:    2 × 5 ha (Regina Lot A | Bing Lot B)`);
+  console.log(`   Season:  2025/2026 — Stage: POSTCOSECHA (Feb-Mar 2026)`);
+  console.log(`   Harvest: Regina Jan 15, 2026 | Bing Dec 28, 2025`);
+  console.log(`   Inputs:  ${inputsData.length} records`);
+  console.log(`   Labor:   ${laborData.length} records`);
+  console.log(`   Weather: ${weatherHistory.length} days (3 weeks, ending today)`);
+  console.log(`   Alerts:  ${alertsData.length} (1 critical, 1 warning, 2 info)`);
+  console.log("─".repeat(55));
+  console.log("\n🔑 Test login (Clerk): carlos.fuentes@agromind.cl");
 }
 
 main()
