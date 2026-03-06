@@ -1,0 +1,456 @@
+// AgroMind MVP - Prisma Schema
+// Domain: cherries, Maule Region, Chile
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+// USERS & AUTHENTICATION (Clerk syncs id)
+// ─────────────────────────────────────────────
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  name      String
+  role      UserRole @default(FARMER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  farms Farm[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  FARMER
+  AGRONOMIST
+  ADMIN
+}
+
+// ─────────────────────────────────────────────
+// FARM (PROPERTY)
+// ─────────────────────────────────────────────
+model Farm {
+  id        String  @id @default(cuid())
+  name      String
+  address   String
+  region    String  // "Maule", "O'Higgins", etc.
+  commune   String  // "Curicó", "Talca", etc.
+  latitude  Float
+  longitude Float
+  totalArea Float   // total hectares
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lots        Lot[]
+  weatherLogs WeatherLog[]
+  alerts      Alert[]
+  iotDevices  IoTDevice[]
+
+  @@map("farms")
+}
+
+// ─────────────────────────────────────────────
+// LOT (subdivision of the farm)
+// ─────────────────────────────────────────────
+model Lot {
+  id        String  @id @default(cuid())
+  name      String  // "Lot A", "North Sector", etc.
+  area      Float   // hectares
+  soilType  String? // "Clay loam", "Sandy loam"
+  slopePerc Float?  // slope percentage
+
+  farmId String
+  farm   Farm   @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  crops      Crop[]
+  iotDevices IoTDevice[]
+
+  @@map("lots")
+}
+
+// ─────────────────────────────────────────────
+// CROP (what is planted in the lot)
+// ─────────────────────────────────────────────
+model Crop {
+  id        String  @id @default(cuid())
+  species   String  // "Cherry"
+  variety   String  // "Regina", "Bing", "Lapins"
+  plantYear Int     // year of planting
+  density   Float   // plants per hectare
+  rootstock String? // rootstock: "Colt", "Mahaleb"
+
+  lotId String
+  lot   Lot    @relation(fields: [lotId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  productionCycles ProductionCycle[]
+
+  @@map("crops")
+}
+
+// ─────────────────────────────────────────────
+// PRODUCTION CYCLE
+// Cherry-specific: phenology, chill hours, caliber
+// ─────────────────────────────────────────────
+model ProductionCycle {
+  id        String   @id @default(cuid())
+  season    String   // "2024/2025"
+  startDate DateTime
+  endDate   DateTime?
+  isActive  Boolean  @default(true)
+
+  // Cherry phenology
+  phenologicalStage PhenologicalStage @default(DORMANCY)
+
+  // Accumulated chill hours (target ≥ 800h below 7°C to break dormancy)
+  chillHoursAccumulated Int @default(0)
+
+  // Harvest estimates
+  estimatedCalibration Float?    // mm average estimated diameter
+  estimatedYield       Float?    // kg/ha estimated
+  estimatedHarvestDate DateTime?
+  actualHarvestDate    DateTime?
+
+  // Production destination
+  productionDestination ProductionDestination @default(EXPORT)
+
+  // Final result (filled when cycle closes)
+  actualYield    Float? // kg/ha real at harvest
+  averagePrice   Float? // CLP per kg obtained
+
+  notes String?
+
+  cropId String
+  crop   Crop   @relation(fields: [cropId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  inputs       Input[]
+  laborRecords LaborRecord[]
+
+  @@map("production_cycles")
+}
+
+enum PhenologicalStage {
+  DORMANCY           // Jun-Aug: winter dormancy
+  BUDBREAK           // Sep: swollen buds
+  FLOWERING          // Oct: open white flowers (critical: frost)
+  FRUIT_SET          // Nov: fruit set after pollination
+  FRUIT_GROWTH       // Nov-Dec: pit hardening
+  FRUIT_FILL         // Dec-Jan: sugar accumulation (critical: heat)
+  MATURITY           // Jan: ready to harvest
+  POST_HARVEST       // Feb-Mar: recovery, pruning
+}
+
+enum ProductionDestination {
+  EXPORT
+  DOMESTIC_MARKET
+  INDUSTRY
+  MIXED
+}
+
+// ─────────────────────────────────────────────
+// INPUTS (fertilizers, agrochemicals, irrigation)
+// ─────────────────────────────────────────────
+model Input {
+  id          String        @id @default(cuid())
+  date        DateTime
+  category    InputCategory
+  name        String        // "Ammonium nitrate", "Captan", "Chlorpyrifos"
+  quantity    Float
+  unit        String        // "kg", "L", "unit"
+  costPerUnit Float         // CLP per unit
+  totalCost   Float         // quantity × costPerUnit
+  supplier    String?
+  notes       String?
+
+  productionCycleId String
+  productionCycle   ProductionCycle @relation(fields: [productionCycleId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("inputs")
+}
+
+enum InputCategory {
+  FERTILIZER
+  HERBICIDE
+  FUNGICIDE
+  INSECTICIDE
+  IRRIGATION
+  PLANT_MATERIAL
+  OTHER
+}
+
+// ─────────────────────────────────────────────
+// LABOR RECORDS
+// ─────────────────────────────────────────────
+model LaborRecord {
+  id             String        @id @default(cuid())
+  date           DateTime
+  activity       LaborActivity
+  workerCount    Int           // number of workers
+  hoursPerWorker Float         // hours per worker
+  totalHours     Float         // workerCount × hoursPerWorker
+  costPerHour    Float         // CLP per worker-hour
+  totalCost      Float         // totalHours × costPerHour
+  notes          String?
+
+  productionCycleId String
+  productionCycle   ProductionCycle @relation(fields: [productionCycleId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("labor_records")
+}
+
+enum LaborActivity {
+  PRUNING
+  THINNING
+  PESTICIDE_APPLICATION
+  IRRIGATION
+  FERTILIZATION
+  HARVEST
+  PACKING
+  MONITORING
+  NETTING_INSTALLATION
+  OTHER
+}
+
+// ─────────────────────────────────────────────
+// WEATHER LOGS
+// Hourly/daily data from Open-Meteo
+// ─────────────────────────────────────────────
+model WeatherLog {
+  id        String   @id @default(cuid())
+  timestamp DateTime
+
+  // Temperature
+  tempC    Float  // temperature at that moment
+  tempMinC Float? // daily minimum (daily record)
+  tempMaxC Float? // daily maximum
+
+  // Precipitation
+  precipMm Float @default(0) // mm
+
+  // Wind
+  windSpeedKmh  Float? // km/h
+  windDirection Int?   // degrees 0-360
+
+  // Humidity and radiation
+  humidity      Float? // %
+  solarRadiation Float? // W/m²
+
+  // Reference evapotranspiration (Penman-Monteith)
+  etMm Float? // mm/day
+
+  // Calculated indicators for cherries
+  isBelowFrostThreshold Boolean @default(false) // tempC < -1°C
+  isRainRisk            Boolean @default(false) // rain during critical period
+  contributesToChillHours Boolean @default(false) // tempC < 7°C (counts chill hours)
+
+  farmId String
+  farm   Farm   @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([farmId, timestamp])
+  @@index([farmId, timestamp])
+  @@map("weather_logs")
+}
+
+// ─────────────────────────────────────────────
+// ALERTS
+// Generated by automatic rules or AI agent (Claude)
+// ─────────────────────────────────────────────
+model Alert {
+  id             String        @id @default(cuid())
+  type           AlertType
+  severity       AlertSeverity
+  title          String
+  description    String
+  recommendation String?       // concrete action suggested by the agent
+
+  // Context of the value that triggered the alert
+  triggerValue  Float?  // e.g.: -2.3 (°C)
+  triggerMetric String? // "min_temperature", "precipitation_mm"
+
+  isRead     Boolean   @default(false)
+  isResolved Boolean   @default(false)
+  resolvedAt DateTime?
+
+  source AlertSource @default(AUTOMATIC)
+
+  farmId String
+  farm   Farm   @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([farmId, isRead])
+  @@index([farmId, createdAt])
+  @@map("alerts")
+}
+
+enum AlertType {
+  FROST              // temp < -1°C during flowering
+  HARVEST_RAIN       // rain during harvest period
+  CHILL_HOUR_DEFICIT // insufficient chill hours leaving winter
+  HEAT_WAVE          // temp > 35°C during fruit fill
+  STRONG_WIND        // wind > 60 km/h
+  HIGH_HUMIDITY      // fungal risk due to RH > 90%
+  IRRIGATION_PENDING // water deficit detected by ET
+  GENERAL            // general AI agent alert
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum AlertSource {
+  AUTOMATIC // deterministic system rule
+  AI        // generated by Claude
+  MANUAL    // entered by the farmer
+}
+
+// ─────────────────────────────────────────────
+// AI AGENT CONVERSATIONS
+// Allows saving and resuming conversations
+// ─────────────────────────────────────────────
+model ChatConversation {
+  id        String   @id @default(cuid())
+  title     String   // Title generated or defined by the user
+  clerkId   String   // User ID in Clerk
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages ChatMessage[]
+
+  @@index([clerkId, updatedAt])
+  @@map("chat_conversations")
+}
+
+model ChatMessage {
+  id             String           @id @default(cuid())
+  role           ChatMessageRole
+  content        String           @db.Text
+  createdAt      DateTime         @default(now())
+
+  conversationId String
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("chat_messages")
+}
+
+enum ChatMessageRole {
+  USER
+  ASSISTANT
+}
+
+// ─────────────────────────────────────────────
+// SAVED REPORTS
+// Reports generated by the agent that the user saves
+// ─────────────────────────────────────────────
+model SavedReport {
+  id        String          @id @default(cuid())
+  type      SavedReportType
+  title     String
+  content   String          @db.Text
+  clerkId   String
+
+  createdAt DateTime @default(now())
+
+  @@index([clerkId, createdAt])
+  @@map("saved_reports")
+}
+
+enum SavedReportType {
+  WEEKLY
+  RISK
+  HARVEST
+}
+
+// ─────────────────────────────────────────────
+// IoT DEVICES & READINGS
+// Field-deployed sensors reporting in real-time
+// ─────────────────────────────────────────────
+
+enum IoTDeviceType {
+  WEATHER_STATION      // Full station: temp, humidity, wind, rain
+  TEMPERATURE_HUMIDITY // Simple T/RH sensor
+  SOIL_MOISTURE        // Volumetric soil moisture probe
+  FROST_SENSOR         // Precise low-temp sensor (canopy level)
+  FLOW_METER           // Irrigation channel flow meter
+  LEAF_WETNESS         // Leaf wetness / fungal risk sensor
+}
+
+enum IoTDeviceStatus {
+  ONLINE       // Reporting normally
+  OFFLINE      // No data received in > 2h
+  MAINTENANCE  // Manually disabled
+}
+
+model IoTDevice {
+  id           String          @id @default(cuid())
+  name         String
+  type         IoTDeviceType
+  status       IoTDeviceStatus @default(ONLINE)
+  latitude     Float
+  longitude    Float
+  batteryPct   Int?            // 0-100 (%)
+  serialNumber String?
+  notes        String?
+  lastSeenAt   DateTime?
+
+  farmId String
+  farm   Farm   @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  lotId String?
+  lot   Lot?    @relation(fields: [lotId], references: [id])
+
+  readings IoTReading[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([farmId])
+  @@index([lotId])
+  @@map("iot_devices")
+}
+
+model IoTReading {
+  id        String   @id @default(cuid())
+  metric    String   // "temperature_c" | "humidity_pct" | "soil_moisture_pct" | "wind_speed_kmh" | "precipitation_mm" | "leaf_wetness_pct"
+  value     Float
+  unit      String   // "°C" | "%" | "km/h" | "mm"
+  timestamp DateTime @default(now())
+
+  deviceId String
+  device   IoTDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, timestamp])
+  @@index([deviceId, metric, timestamp])
+  @@map("iot_readings")
+}
