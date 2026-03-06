@@ -5,10 +5,10 @@
 
 import { db } from "@/lib/db";
 import { fetchWeather } from "@/lib/weather/open-meteo";
-import { detectarRiesgos } from "@/lib/weather/indicators";
+import { detectRisks } from "@/lib/weather/indicators";
 import { format } from "date-fns";
 import { enUS } from "date-fns/locale";
-import { ESTADO_FENOLOGICO_LABELS, DESTINO_LABELS } from "@/types";
+import { PHENOLOGICAL_STAGE_LABELS, DESTINATION_LABELS } from "@/types";
 
 export async function buildAgronomicContext(clerkId: string): Promise<string> {
   const farm = await db.farm.findFirst({
@@ -42,11 +42,11 @@ export async function buildAgronomicContext(clerkId: string): Promise<string> {
   let weatherContext = "";
   try {
     const weather = await fetchWeather(farm.latitude, farm.longitude);
-    const cicloRef = farm.lots.flatMap((l) => l.crops.flatMap((c) => c.productionCycles))[0];
-    const riesgos = detectarRiesgos(
+    const cycleRef = farm.lots.flatMap((l) => l.crops.flatMap((c) => c.productionCycles))[0];
+    const risks = detectRisks(
       weather.forecast,
-      cicloRef?.estadoFenologico ?? "CUAJA",
-      cicloRef?.horasFrioAcumuladas ?? 0,
+      cycleRef?.phenologicalStage ?? "FRUIT_SET",
+      cycleRef?.chillHoursAccumulated ?? 0,
       weather.current.humidity
     );
 
@@ -66,61 +66,61 @@ ${weather.forecast
   )
   .join("\n")}
 
-### Detected Risks: ${riesgos.length === 0 ? "None" : ""}
-${riesgos.map((r) => `- [${r.severidad}] ${r.titulo}: ${r.recomendacion}`).join("\n")}`;
+### Detected Risks: ${risks.length === 0 ? "None" : ""}
+${risks.map((r) => `- [${r.severity}] ${r.title}: ${r.recommendation}`).join("\n")}`;
   } catch {
     weatherContext = "## Weather: Not available at this time.";
   }
 
   // Active cycles
-  const ciclos = farm.lots.flatMap((l) =>
+  const cycles = farm.lots.flatMap((l) =>
     l.crops.flatMap((c) =>
       c.productionCycles.map((cy) => ({
         ...cy,
-        variedad: c.variety,
-        loteNombre: l.name,
-        loteArea: l.area,
+        variety: c.variety,
+        lotName: l.name,
+        lotArea: l.area,
       }))
     )
   );
 
-  const ciclosContext = ciclos
+  const cyclesContext = cycles
     .map((cy) => {
-      const costoInsumos = cy.inputs.reduce((s, i) => s + i.totalCost, 0);
-      const costoLabor = cy.laborRecords.reduce((s, l) => s + l.totalCost, 0);
-      const ultimosInsumos = cy.inputs
+      const inputsCost = cy.inputs.reduce((s, i) => s + i.totalCost, 0);
+      const laborCost = cy.laborRecords.reduce((s, l) => s + l.totalCost, 0);
+      const recentInputs = cy.inputs
         .slice(0, 5)
         .map((i) => `  * ${format(i.date, "MMM d", { locale: enUS })}: ${i.name} (${i.quantity}${i.unit}) — $${i.totalCost.toLocaleString("en-US")}`)
         .join("\n");
-      const ultimaLabor = cy.laborRecords
+      const recentLabor = cy.laborRecords
         .slice(0, 5)
         .map((l) => `  * ${format(l.date, "MMM d", { locale: enUS })}: ${l.activity} — ${l.workerCount} workers × ${l.hoursPerWorker}h`)
         .join("\n");
 
       return `
-### Cycle: ${cy.variedad} · ${cy.loteNombre} (${cy.loteArea} ha)
+### Cycle: ${cy.variety} · ${cy.lotName} (${cy.lotArea} ha)
 - Season: ${cy.season}
-- Phenological stage: ${ESTADO_FENOLOGICO_LABELS[cy.estadoFenologico]}
-- Accumulated chill hours: ${cy.horasFrioAcumuladas}h (target: 800h)
-- Estimated size: ${cy.calibreEstimado?.toFixed(1) ?? "Not defined"} mm
-- Estimated yield: ${cy.rendimientoEstimado ? `${(cy.rendimientoEstimado / 1000).toFixed(1)} t/ha` : "Not defined"}
-- Estimated harvest date: ${cy.fechaCosechaEstimada ? format(cy.fechaCosechaEstimada, "MMM d, yyyy", { locale: enUS }) : "Not defined"}
-- Destination: ${DESTINO_LABELS[cy.destinoProduccion]}
-- Accumulated input cost: $${costoInsumos.toLocaleString("en-US")} CLP
-- Labor cost: $${costoLabor.toLocaleString("en-US")} CLP
-- Total cost: $${(costoInsumos + costoLabor).toLocaleString("en-US")} CLP (${Math.round((costoInsumos + costoLabor) / cy.loteArea / 1000)}k CLP/ha)
-${cy.notas ? `- Agronomist notes: ${cy.notas}` : ""}
+- Phenological stage: ${PHENOLOGICAL_STAGE_LABELS[cy.phenologicalStage]}
+- Accumulated chill hours: ${cy.chillHoursAccumulated}h (target: 800h)
+- Estimated size: ${cy.estimatedCalibration?.toFixed(1) ?? "Not defined"} mm
+- Estimated yield: ${cy.estimatedYield ? `${(cy.estimatedYield / 1000).toFixed(1)} t/ha` : "Not defined"}
+- Estimated harvest date: ${cy.estimatedHarvestDate ? format(cy.estimatedHarvestDate, "MMM d, yyyy", { locale: enUS }) : "Not defined"}
+- Destination: ${DESTINATION_LABELS[cy.productionDestination]}
+- Accumulated input cost: $${inputsCost.toLocaleString("en-US")} CLP
+- Labor cost: $${laborCost.toLocaleString("en-US")} CLP
+- Total cost: $${(inputsCost + laborCost).toLocaleString("en-US")} CLP (${Math.round((inputsCost + laborCost) / cy.lotArea / 1000)}k CLP/ha)
+${cy.notes ? `- Agronomist notes: ${cy.notes}` : ""}
 
 Recent inputs:
-${ultimosInsumos || "  (No recent records)"}
+${recentInputs || "  (No recent records)"}
 
 Recent labor:
-${ultimaLabor || "  (No recent records)"}`;
+${recentLabor || "  (No recent records)"}`;
     })
     .join("\n");
 
   // Recent weather history
-  const climaHistorial =
+  const weatherHistory =
     farm.weatherLogs.length > 0
       ? farm.weatherLogs
           .slice(0, 7)
@@ -132,7 +132,7 @@ ${ultimaLabor || "  (No recent records)"}`;
       : "No recorded weather history.";
 
   // Active alerts
-  const alertasContext =
+  const alertsContext =
     farm.alerts.length > 0
       ? farm.alerts
           .map((a) => `- [${a.severity}] ${a.title}: ${a.description.slice(0, 150)}...`)
@@ -149,11 +149,11 @@ ${ultimaLabor || "  (No recent records)"}`;
 ${weatherContext}
 
 ## Recent weather history (last 7 days):
-${climaHistorial}
+${weatherHistory}
 
 ## Active production cycles:
-${ciclosContext}
+${cyclesContext}
 
 ## Active alerts:
-${alertasContext}`;
+${alertsContext}`;
 }

@@ -6,7 +6,7 @@ import { z } from "zod";
 const CreateLaborSchema = z.object({
   productionCycleId: z.string(),
   date: z.string(),
-  activity: z.enum(["PODA","RALEO","APLICACION_FITOSANITARIA","RIEGO","FERTILIZACION","COSECHA","EMPAQUE","MONITOREO","INSTALACION_MALLA","OTRO"]),
+  activity: z.enum(["PRUNING","THINNING","PESTICIDE_APPLICATION","IRRIGATION","FERTILIZATION","HARVEST","PACKING","MONITORING","NETTING_INSTALLATION","OTHER"]),
   workerCount: z.number().int().positive(),
   hoursPerWorker: z.number().positive(),
   costPerHour: z.number().nonnegative(),

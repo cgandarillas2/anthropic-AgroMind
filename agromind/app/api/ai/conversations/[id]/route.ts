@@ -10,17 +10,22 @@ export async function GET(
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id } = await params;
-  const conversation = await db.chatConversation.findUnique({
-    where: { id },
-    include: { messages: { orderBy: { createdAt: "asc" } } },
-  });
+  try {
+    const { id } = await params;
+    const conversation = await db.chatConversation.findUnique({
+      where: { id },
+      include: { messages: { orderBy: { createdAt: "asc" } } },
+    });
 
-  if (!conversation || conversation.clerkId !== userId) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!conversation || conversation.clerkId !== userId) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(conversation);
+  } catch (e) {
+    console.error("[CONVERSATION_GET]", e);
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
-
-  return NextResponse.json(conversation);
 }
 
 // PUT /api/ai/conversations/[id] - add new messages or rename conversation
@@ -31,38 +36,43 @@ export async function PUT(
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id } = await params;
-  const conversation = await db.chatConversation.findUnique({ where: { id } });
+  try {
+    const { id } = await params;
+    const conversation = await db.chatConversation.findUnique({ where: { id } });
 
-  if (!conversation || conversation.clerkId !== userId) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!conversation || conversation.clerkId !== userId) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    const { title, messages } = await req.json() as {
+      title?: string;
+      messages?: { role: "user" | "assistant"; content: string }[];
+    };
+
+    const updated = await db.chatConversation.update({
+      where: { id },
+      data: {
+        ...(title ? { title } : {}),
+        ...(messages?.length
+          ? {
+              messages: {
+                create: messages.map((m) => ({
+                  role: m.role === "user" ? "USER" : "ASSISTANT",
+                  content: m.content,
+                })),
+              },
+            }
+          : {}),
+        updatedAt: new Date(),
+      },
+      include: { messages: { orderBy: { createdAt: "asc" } } },
+    });
+
+    return NextResponse.json(updated);
+  } catch (e) {
+    console.error("[CONVERSATION_PUT]", e);
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
-
-  const { title, messages } = await req.json() as {
-    title?: string;
-    messages?: { role: "user" | "assistant"; content: string }[];
-  };
-
-  const updated = await db.chatConversation.update({
-    where: { id },
-    data: {
-      ...(title ? { title } : {}),
-      ...(messages?.length
-        ? {
-            messages: {
-              create: messages.map((m) => ({
-                role: m.role === "user" ? "USER" : "ASSISTANT",
-                content: m.content,
-              })),
-            },
-          }
-        : {}),
-      updatedAt: new Date(),
-    },
-    include: { messages: { orderBy: { createdAt: "asc" } } },
-  });
-
-  return NextResponse.json(updated);
 }
 
 // DELETE /api/ai/conversations/[id]
@@ -73,13 +83,18 @@ export async function DELETE(
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id } = await params;
-  const conversation = await db.chatConversation.findUnique({ where: { id } });
+  try {
+    const { id } = await params;
+    const conversation = await db.chatConversation.findUnique({ where: { id } });
 
-  if (!conversation || conversation.clerkId !== userId) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!conversation || conversation.clerkId !== userId) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    await db.chatConversation.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (e) {
+    console.error("[CONVERSATION_DELETE]", e);
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
-
-  await db.chatConversation.delete({ where: { id } });
-  return NextResponse.json({ success: true });
 }

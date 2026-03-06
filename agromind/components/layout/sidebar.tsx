@@ -12,6 +12,7 @@ import {
   Users,
   Bot,
   BarChart2,
+  Cpu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
   { href: "/cycles", label: "Active Cycle", icon: Leaf },
   { href: "/weather", label: "Weather", icon: Cloud },
   { href: "/alerts", label: "Alerts", icon: BellRing },
+  { href: "/iot", label: "IoT Sensors", icon: Cpu },
   { href: "/inputs", label: "Inputs", icon: FlaskConical },
   { href: "/labor", label: "Labor", icon: Users },
   { href: "/ai-agent", label: "AI Agent", icon: Bot }

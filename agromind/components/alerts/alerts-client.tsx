@@ -13,9 +13,9 @@ import type { Alert } from "@prisma/client";
 import { ALERT_TYPE_LABELS } from "@/types";
 
 const SEVERITY_STYLES = {
-  CRITICA:     { card: "border-red-200",    badge: "bg-red-100 text-red-700",    dot: "bg-red-500"    },
-  ADVERTENCIA: { card: "border-yellow-200", badge: "bg-yellow-100 text-yellow-700", dot: "bg-yellow-500" },
-  INFO:        { card: "border-blue-200",   badge: "bg-blue-100 text-blue-700",  dot: "bg-blue-500"   },
+  CRITICAL: { card: "border-red-200",    badge: "bg-red-100 text-red-700",    dot: "bg-red-500"    },
+  WARNING:  { card: "border-yellow-200", badge: "bg-yellow-100 text-yellow-700", dot: "bg-yellow-500" },
+  INFO:     { card: "border-blue-200",   badge: "bg-blue-100 text-blue-700",  dot: "bg-blue-500"   },
 } as const;
 
 type Filter = "all" | "unread" | "resolved";
@@ -69,7 +69,7 @@ export function AlertsClient({ alerts: initialAlerts, farmId }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Barra de acciones */}
+      {/* Action bar */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2">
           <Filter className="w-4 h-4 text-gray-400" />
@@ -104,7 +104,7 @@ export function AlertsClient({ alerts: initialAlerts, farmId }: Props) {
 
       <Separator />
 
-      {/* Lista de alertas */}
+      {/* Alert list */}
       {filtered.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <CheckCircle className="w-10 h-10 mx-auto mb-3 text-gray-300" />
@@ -124,7 +124,7 @@ export function AlertsClient({ alerts: initialAlerts, farmId }: Props) {
                 )}
               >
                 <div className="flex items-start gap-3">
-                  {/* Dot indicador */}
+                  {/* Indicator dot */}
                   <div className="mt-1.5 shrink-0">
                     {!alert.isRead && !alert.isResolved ? (
                       <div className={cn("w-2 h-2 rounded-full", styles.dot)} />
@@ -167,7 +167,7 @@ export function AlertsClient({ alerts: initialAlerts, farmId }: Props) {
                       </div>
                     )}
 
-                    {/* Acciones */}
+                    {/* Actions */}
                     {!alert.isResolved && (
                       <div className="flex gap-2 mt-3">
                         {!alert.isRead && (

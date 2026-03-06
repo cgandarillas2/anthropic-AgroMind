@@ -1,22 +1,22 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
-import type { RiesgoDetectado } from "@/lib/weather/indicators";
-import { formatFechaCorta } from "@/lib/weather/indicators";
+import type { DetectedRisk } from "@/lib/weather/indicators";
+import { formatShortDate } from "@/lib/weather/indicators";
 
 const SEVERITY_STYLES = {
-  CRITICA:    "border-red-300 bg-red-50 text-red-900",
-  ADVERTENCIA:"border-yellow-300 bg-yellow-50 text-yellow-900",
-  INFO:       "border-blue-300 bg-blue-50 text-blue-900",
+  CRITICAL: "border-red-300 bg-red-50 text-red-900",
+  WARNING:  "border-yellow-300 bg-yellow-50 text-yellow-900",
+  INFO:     "border-blue-300 bg-blue-50 text-blue-900",
 } as const;
 
 const SEVERITY_ICONS = {
-  CRITICA:    "🚨",
-  ADVERTENCIA:"⚠️",
-  INFO:       "ℹ️",
+  CRITICAL: "🚨",
+  WARNING:  "⚠️",
+  INFO:     "ℹ️",
 } as const;
 
 interface Props {
-  riesgos: RiesgoDetectado[];
+  riesgos: DetectedRisk[];
 }
 
 export function RiskBanners({ riesgos }: Props) {
@@ -33,33 +33,33 @@ export function RiskBanners({ riesgos }: Props) {
     );
   }
 
-  // Ordenar: CRITICA primero
-  const ordenados = [...riesgos].sort((a, b) => {
-    const orden = { CRITICA: 0, ADVERTENCIA: 1, INFO: 2 };
-    return orden[a.severidad] - orden[b.severidad];
+  // Sort: CRITICAL first
+  const sorted = [...riesgos].sort((a, b) => {
+    const order = { CRITICAL: 0, WARNING: 1, INFO: 2 };
+    return order[a.severity] - order[b.severity];
   });
 
   return (
     <div className="space-y-3">
-      {ordenados.map((riesgo, i) => (
+      {sorted.map((risk, i) => (
         <Alert
           key={i}
-          className={cn("border", SEVERITY_STYLES[riesgo.severidad])}
+          className={cn("border", SEVERITY_STYLES[risk.severity])}
         >
           <AlertTitle className="flex items-center gap-2 font-semibold">
-            <span>{SEVERITY_ICONS[riesgo.severidad]}</span>
-            {riesgo.titulo}
-            {riesgo.fechas.length > 0 && (
+            <span>{SEVERITY_ICONS[risk.severity]}</span>
+            {risk.title}
+            {risk.dates.length > 0 && (
               <span className="text-xs font-normal opacity-75 ml-auto">
-                {riesgo.fechas.map(formatFechaCorta).join(", ")}
+                {risk.dates.map(formatShortDate).join(", ")}
               </span>
             )}
           </AlertTitle>
           <AlertDescription className="mt-1 space-y-1">
-            <p className="text-sm opacity-90">{riesgo.descripcion}</p>
+            <p className="text-sm opacity-90">{risk.description}</p>
             <p className="text-sm font-medium border-t border-current/20 pt-1 mt-1">
-              <span className="opacity-60">Acción: </span>
-              {riesgo.recomendacion}
+              <span className="opacity-60">Action: </span>
+              {risk.recommendation}
             </p>
           </AlertDescription>
         </Alert>

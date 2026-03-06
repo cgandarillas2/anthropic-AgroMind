@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { getWeatherInfo, type ForecastDay } from "@/lib/weather/open-meteo";
-import { formatFechaCorta } from "@/lib/weather/indicators";
+import { formatShortDate } from "@/lib/weather/indicators";
 
 interface Props {
   forecast: ForecastDay[];
@@ -30,7 +30,7 @@ export function ForecastStrip({ forecast }: Props) {
                 )}
               >
                 <span className="text-xs text-gray-500 font-medium leading-tight">
-                  {formatFechaCorta(day.date)}
+                  {formatShortDate(day.date)}
                 </span>
                 <span className="text-2xl">{emoji}</span>
                 <div className="text-xs font-bold text-gray-800">

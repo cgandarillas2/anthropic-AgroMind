@@ -1,5 +1,5 @@
 // AgroMind MVP - Prisma Schema
-// Dominio: cerezos, Región del Maule, Chile
+// Domain: cherries, Maule Region, Chile
 
 generator client {
   provider = "prisma-client-js"
@@ -10,7 +10,7 @@ datasource db {
 }
 
 // ─────────────────────────────────────────────
-// USUARIOS Y AUTENTICACIÓN (Clerk sincroniza id)
+// USERS & AUTHENTICATION (Clerk syncs id)
 // ─────────────────────────────────────────────
 model User {
   id        String   @id @default(cuid())
@@ -33,7 +33,7 @@ enum UserRole {
 }
 
 // ─────────────────────────────────────────────
-// CAMPO (PREDIO)
+// FARM (PROPERTY)
 // ─────────────────────────────────────────────
 model Farm {
   id        String  @id @default(cuid())
@@ -43,7 +43,7 @@ model Farm {
   commune   String  // "Curicó", "Talca", etc.
   latitude  Float
   longitude Float
-  totalArea Float   // hectáreas totales
+  totalArea Float   // total hectares
 
   ownerId String
   owner   User   @relation(fields: [ownerId], references: [id])
@@ -54,19 +54,20 @@ model Farm {
   lots        Lot[]
   weatherLogs WeatherLog[]
   alerts      Alert[]
+  iotDevices  IoTDevice[]
 
   @@map("farms")
 }
 
 // ─────────────────────────────────────────────
-// LOTE (subdivisión del campo)
+// LOT (subdivision of the farm)
 // ─────────────────────────────────────────────
 model Lot {
   id        String  @id @default(cuid())
-  name      String  // "Lote A", "Sector Norte", etc.
-  area      Float   // hectáreas
-  soilType  String? // "Franco arcilloso", "Arenoso"
-  slopePerc Float?  // porcentaje de pendiente
+  name      String  // "Lot A", "North Sector", etc.
+  area      Float   // hectares
+  soilType  String? // "Clay loam", "Sandy loam"
+  slopePerc Float?  // slope percentage
 
   farmId String
   farm   Farm   @relation(fields: [farmId], references: [id], onDelete: Cascade)
@@ -74,21 +75,22 @@ model Lot {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  crops Crop[]
+  crops      Crop[]
+  iotDevices IoTDevice[]
 
   @@map("lots")
 }
 
 // ─────────────────────────────────────────────
-// CULTIVO (qué se planta en el lote)
+// CROP (what is planted in the lot)
 // ─────────────────────────────────────────────
 model Crop {
   id        String  @id @default(cuid())
-  species   String  // "Cerezo"
+  species   String  // "Cherry"
   variety   String  // "Regina", "Bing", "Lapins"
-  plantYear Int     // año de plantación
-  density   Float   // plantas por hectárea
-  rootstock String? // portainjerto: "Colt", "Mahaleb"
+  plantYear Int     // year of planting
+  density   Float   // plants per hectare
+  rootstock String? // rootstock: "Colt", "Mahaleb"
 
   lotId String
   lot   Lot    @relation(fields: [lotId], references: [id], onDelete: Cascade)
@@ -102,8 +104,8 @@ model Crop {
 }
 
 // ─────────────────────────────────────────────
-// CICLO PRODUCTIVO
-// Específico para cerezos: fenología, horas frío, calibre
+// PRODUCTION CYCLE
+// Cherry-specific: phenology, chill hours, caliber
 // ─────────────────────────────────────────────
 model ProductionCycle {
   id        String   @id @default(cuid())
@@ -112,26 +114,26 @@ model ProductionCycle {
   endDate   DateTime?
   isActive  Boolean  @default(true)
 
-  // Fenología del cerezo
-  estadoFenologico EstadoFenologico @default(DORMANCIA)
+  // Cherry phenology
+  phenologicalStage PhenologicalStage @default(DORMANCY)
 
-  // Horas frío acumuladas (meta ≥ 800h bajo 7°C para salir de dormancia)
-  horasFrioAcumuladas Int @default(0)
+  // Accumulated chill hours (target ≥ 800h below 7°C to break dormancy)
+  chillHoursAccumulated Int @default(0)
 
-  // Estimaciones de cosecha
-  calibreEstimado      Float?    // mm de diámetro promedio estimado
-  rendimientoEstimado  Float?    // kg/ha estimado
-  fechaCosechaEstimada DateTime?
-  fechaCosechaReal     DateTime?
+  // Harvest estimates
+  estimatedCalibration Float?    // mm average estimated diameter
+  estimatedYield       Float?    // kg/ha estimated
+  estimatedHarvestDate DateTime?
+  actualHarvestDate    DateTime?
 
-  // Destino de la producción
-  destinoProduccion DestinoProduccion @default(EXPORTACION)
+  // Production destination
+  productionDestination ProductionDestination @default(EXPORT)
 
-  // Resultado final (se llena al cerrar el ciclo)
-  rendimientoReal Float? // kg/ha real al cosechar
-  precioPromedio  Float? // CLP por kg obtenido
+  // Final result (filled when cycle closes)
+  actualYield    Float? // kg/ha real at harvest
+  averagePrice   Float? // CLP per kg obtained
 
-  notas String?
+  notes String?
 
   cropId String
   crop   Crop   @relation(fields: [cropId], references: [id], onDelete: Cascade)
@@ -145,35 +147,35 @@ model ProductionCycle {
   @@map("production_cycles")
 }
 
-enum EstadoFenologico {
-  DORMANCIA           // Jun-Ago: reposo invernal
-  BROTAMIENTO         // Sep: yemas hinchadas
-  FLORACION           // Oct: flor blanca abierta (crítico: heladas)
-  CUAJA               // Nov: fruto cuajado post-polinización
-  CRECIMIENTO_FRUTO   // Nov-Dic: endurecimiento carozo
-  LLENADO_FRUTO       // Dic-Ene: acumulación azúcares (crítico: calor)
-  MADUREZ             // Ene: listo para cosechar
-  POSTCOSECHA         // Feb-Mar: recuperación, poda
+enum PhenologicalStage {
+  DORMANCY           // Jun-Aug: winter dormancy
+  BUDBREAK           // Sep: swollen buds
+  FLOWERING          // Oct: open white flowers (critical: frost)
+  FRUIT_SET          // Nov: fruit set after pollination
+  FRUIT_GROWTH       // Nov-Dec: pit hardening
+  FRUIT_FILL         // Dec-Jan: sugar accumulation (critical: heat)
+  MATURITY           // Jan: ready to harvest
+  POST_HARVEST       // Feb-Mar: recovery, pruning
 }
 
-enum DestinoProduccion {
-  EXPORTACION
-  MERCADO_INTERNO
-  INDUSTRIA
-  MIXTO
+enum ProductionDestination {
+  EXPORT
+  DOMESTIC_MARKET
+  INDUSTRY
+  MIXED
 }
 
 // ─────────────────────────────────────────────
-// INSUMOS (fertilizantes, agroquímicos, riego)
+// INPUTS (fertilizers, agrochemicals, irrigation)
 // ─────────────────────────────────────────────
 model Input {
   id          String        @id @default(cuid())
   date        DateTime
   category    InputCategory
-  name        String        // "Nitrato de amonio", "Captan", "Clorpirifos"
+  name        String        // "Ammonium nitrate", "Captan", "Chlorpyrifos"
   quantity    Float
-  unit        String        // "kg", "L", "unidad"
-  costPerUnit Float         // CLP por unidad
+  unit        String        // "kg", "L", "unit"
+  costPerUnit Float         // CLP per unit
   totalCost   Float         // quantity × costPerUnit
   supplier    String?
   notes       String?
@@ -188,26 +190,26 @@ model Input {
 }
 
 enum InputCategory {
-  FERTILIZANTE
-  HERBICIDA
-  FUNGICIDA
-  INSECTICIDA
-  RIEGO
-  MATERIAL_VEGETAL
-  OTRO
+  FERTILIZER
+  HERBICIDE
+  FUNGICIDE
+  INSECTICIDE
+  IRRIGATION
+  PLANT_MATERIAL
+  OTHER
 }
 
 // ─────────────────────────────────────────────
-// MANO DE OBRA
+// LABOR RECORDS
 // ─────────────────────────────────────────────
 model LaborRecord {
   id             String        @id @default(cuid())
   date           DateTime
   activity       LaborActivity
-  workerCount    Int           // número de personas
-  hoursPerWorker Float         // horas por persona
+  workerCount    Int           // number of workers
+  hoursPerWorker Float         // hours per worker
   totalHours     Float         // workerCount × hoursPerWorker
-  costPerHour    Float         // CLP por hora-persona
+  costPerHour    Float         // CLP per worker-hour
   totalCost      Float         // totalHours × costPerHour
   notes          String?
 
@@ -221,49 +223,49 @@ model LaborRecord {
 }
 
 enum LaborActivity {
-  PODA
-  RALEO
-  APLICACION_FITOSANITARIA
-  RIEGO
-  FERTILIZACION
-  COSECHA
-  EMPAQUE
-  MONITOREO
-  INSTALACION_MALLA
-  OTRO
+  PRUNING
+  THINNING
+  PESTICIDE_APPLICATION
+  IRRIGATION
+  FERTILIZATION
+  HARVEST
+  PACKING
+  MONITORING
+  NETTING_INSTALLATION
+  OTHER
 }
 
 // ─────────────────────────────────────────────
-// REGISTROS CLIMÁTICOS
-// Datos horarios/diarios desde Open-Meteo
+// WEATHER LOGS
+// Hourly/daily data from Open-Meteo
 // ─────────────────────────────────────────────
 model WeatherLog {
   id        String   @id @default(cuid())
   timestamp DateTime
 
-  // Temperatura
-  tempC    Float  // temperatura en ese momento
-  tempMinC Float? // mínima del día (registro diario)
-  tempMaxC Float? // máxima del día
+  // Temperature
+  tempC    Float  // temperature at that moment
+  tempMinC Float? // daily minimum (daily record)
+  tempMaxC Float? // daily maximum
 
-  // Precipitación
+  // Precipitation
   precipMm Float @default(0) // mm
 
-  // Viento
+  // Wind
   windSpeedKmh  Float? // km/h
-  windDirection Int?   // grados 0-360
+  windDirection Int?   // degrees 0-360
 
-  // Humedad y radiación
+  // Humidity and radiation
   humidity      Float? // %
   solarRadiation Float? // W/m²
 
-  // Evapotranspiración de referencia (Penman-Monteith)
-  etMm Float? // mm/día
+  // Reference evapotranspiration (Penman-Monteith)
+  etMm Float? // mm/day
 
-  // Indicadores calculados para cerezos
-  esBajoUmbralHelada  Boolean @default(false) // tempC < -1°C
-  esRiesgoLluvia      Boolean @default(false) // lluvia en período crítico
-  contribuyeHorasFrio Boolean @default(false) // tempC < 7°C (cuenta horas frío)
+  // Calculated indicators for cherries
+  isBelowFrostThreshold Boolean @default(false) // tempC < -1°C
+  isRainRisk            Boolean @default(false) // rain during critical period
+  contributesToChillHours Boolean @default(false) // tempC < 7°C (counts chill hours)
 
   farmId String
   farm   Farm   @relation(fields: [farmId], references: [id], onDelete: Cascade)
@@ -276,8 +278,8 @@ model WeatherLog {
 }
 
 // ─────────────────────────────────────────────
-// ALERTAS
-// Generadas por reglas automáticas o por el agente IA (Claude)
+// ALERTS
+// Generated by automatic rules or AI agent (Claude)
 // ─────────────────────────────────────────────
 model Alert {
   id             String        @id @default(cuid())
@@ -285,17 +287,17 @@ model Alert {
   severity       AlertSeverity
   title          String
   description    String
-  recommendation String?       // acción concreta sugerida por el agente
+  recommendation String?       // concrete action suggested by the agent
 
-  // Contexto del valor que disparó la alerta
-  triggerValue  Float?  // ej: -2.3 (°C)
-  triggerMetric String? // "temperatura_minima", "precipitacion_mm"
+  // Context of the value that triggered the alert
+  triggerValue  Float?  // e.g.: -2.3 (°C)
+  triggerMetric String? // "min_temperature", "precipitation_mm"
 
   isRead     Boolean   @default(false)
   isResolved Boolean   @default(false)
   resolvedAt DateTime?
 
-  source AlertSource @default(AUTOMATICA)
+  source AlertSource @default(AUTOMATIC)
 
   farmId String
   farm   Farm   @relation(fields: [farmId], references: [id], onDelete: Cascade)
@@ -309,36 +311,36 @@ model Alert {
 }
 
 enum AlertType {
-  HELADA             // temp < -1°C durante floración
-  LLUVIA_COSECHA     // lluvia en período de cosecha
-  DEFICIT_HORAS_FRIO // horas frío insuficientes al salir del invierno
-  GOLPE_CALOR        // temp > 35°C en llenado de fruto
-  VIENTO_FUERTE      // viento > 60 km/h
-  HUMEDAD_ALTA       // riesgo de hongos por HR > 90%
-  RIEGO_PENDIENTE    // déficit hídrico detectado por ET
-  GENERAL            // alerta general del agente IA
+  FROST              // temp < -1°C during flowering
+  HARVEST_RAIN       // rain during harvest period
+  CHILL_HOUR_DEFICIT // insufficient chill hours leaving winter
+  HEAT_WAVE          // temp > 35°C during fruit fill
+  STRONG_WIND        // wind > 60 km/h
+  HIGH_HUMIDITY      // fungal risk due to RH > 90%
+  IRRIGATION_PENDING // water deficit detected by ET
+  GENERAL            // general AI agent alert
 }
 
 enum AlertSeverity {
   INFO
-  ADVERTENCIA
-  CRITICA
+  WARNING
+  CRITICAL
 }
 
 enum AlertSource {
-  AUTOMATICA // regla determinística del sistema
-  IA         // generada por Claude
-  MANUAL     // ingresada por el agricultor
+  AUTOMATIC // deterministic system rule
+  AI        // generated by Claude
+  MANUAL    // entered by the farmer
 }
 
 // ─────────────────────────────────────────────
-// CONVERSACIONES CON EL AGENTE IA
-// Permite guardar y retomar conversaciones
+// AI AGENT CONVERSATIONS
+// Allows saving and resuming conversations
 // ─────────────────────────────────────────────
 model ChatConversation {
   id        String   @id @default(cuid())
-  title     String   // Título generado o definido por el usuario
-  clerkId   String   // ID del usuario en Clerk
+  title     String   // Title generated or defined by the user
+  clerkId   String   // User ID in Clerk
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -368,8 +370,8 @@ enum ChatMessageRole {
 }
 
 // ─────────────────────────────────────────────
-// REPORTES GUARDADOS
-// Reportes generados por el agente que el usuario decide guardar
+// SAVED REPORTS
+// Reports generated by the agent that the user saves
 // ─────────────────────────────────────────────
 model SavedReport {
   id        String          @id @default(cuid())
@@ -388,4 +390,67 @@ enum SavedReportType {
   WEEKLY
   RISK
   HARVEST
+}
+
+// ─────────────────────────────────────────────
+// IoT DEVICES & READINGS
+// Field-deployed sensors reporting in real-time
+// ─────────────────────────────────────────────
+
+enum IoTDeviceType {
+  WEATHER_STATION      // Full station: temp, humidity, wind, rain
+  TEMPERATURE_HUMIDITY // Simple T/RH sensor
+  SOIL_MOISTURE        // Volumetric soil moisture probe
+  FROST_SENSOR         // Precise low-temp sensor (canopy level)
+  FLOW_METER           // Irrigation channel flow meter
+  LEAF_WETNESS         // Leaf wetness / fungal risk sensor
+}
+
+enum IoTDeviceStatus {
+  ONLINE       // Reporting normally
+  OFFLINE      // No data received in > 2h
+  MAINTENANCE  // Manually disabled
+}
+
+model IoTDevice {
+  id           String          @id @default(cuid())
+  name         String
+  type         IoTDeviceType
+  status       IoTDeviceStatus @default(ONLINE)
+  latitude     Float
+  longitude    Float
+  batteryPct   Int?            // 0-100 (%)
+  serialNumber String?
+  notes        String?
+  lastSeenAt   DateTime?
+
+  farmId String
+  farm   Farm   @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  lotId String?
+  lot   Lot?    @relation(fields: [lotId], references: [id])
+
+  readings IoTReading[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([farmId])
+  @@index([lotId])
+  @@map("iot_devices")
+}
+
+model IoTReading {
+  id        String   @id @default(cuid())
+  metric    String   // "temperature_c" | "humidity_pct" | "soil_moisture_pct" | "wind_speed_kmh" | "precipitation_mm" | "leaf_wetness_pct"
+  value     Float
+  unit      String   // "°C" | "%" | "km/h" | "mm"
+  timestamp DateTime @default(now())
+
+  deviceId String
+  device   IoTDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, timestamp])
+  @@index([deviceId, metric, timestamp])
+  @@map("iot_readings")
 }

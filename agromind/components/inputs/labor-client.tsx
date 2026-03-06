@@ -22,9 +22,9 @@ interface Props {
 }
 
 const ACTIVITY_ICONS: Record<string, string> = {
-  PODA: "✂️", RALEO: "🍒", APLICACION_FITOSANITARIA: "💊",
-  RIEGO: "💧", FERTILIZACION: "🌱", COSECHA: "🧺",
-  EMPAQUE: "📦", MONITOREO: "🔍", INSTALACION_MALLA: "🕸️", OTRO: "⚙️",
+  PRUNING: "✂️", THINNING: "🍒", PESTICIDE_APPLICATION: "💊",
+  IRRIGATION: "💧", FERTILIZATION: "🌱", HARVEST: "🧺",
+  PACKING: "📦", MONITORING: "🔍", NETTING_INSTALLATION: "🕸️", OTHER: "⚙️",
 };
 
 export function LaborClient({ records: initial, cycles }: Props) {
@@ -36,7 +36,7 @@ export function LaborClient({ records: initial, cycles }: Props) {
   const [form, setForm] = useState({
     productionCycleId: cycles[0]?.id ?? "",
     date: new Date().toISOString().split("T")[0],
-    activity: "MONITOREO",
+    activity: "MONITORING",
     workerCount: "",
     hoursPerWorker: "8",
     costPerHour: "2800",
@@ -113,7 +113,7 @@ export function LaborClient({ records: initial, cycles }: Props) {
         </Card>
       </div>
 
-      {/* Tabla */}
+      {/* Table */}
       <Card>
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
@@ -254,7 +254,7 @@ export function LaborClient({ records: initial, cycles }: Props) {
                   value={form.hoursPerWorker} onChange={(e) => setForm((f) => ({ ...f, hoursPerWorker: e.target.value }))} />
               </div>
               <div>
-                <Label className="text-xs">CLP/hora</Label>
+                <Label className="text-xs">CLP/hour</Label>
                 <Input type="number" className="mt-1 h-8 text-sm"
                   value={form.costPerHour} onChange={(e) => setForm((f) => ({ ...f, costPerHour: e.target.value }))} />
               </div>

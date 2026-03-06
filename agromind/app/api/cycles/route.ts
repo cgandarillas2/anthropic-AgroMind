@@ -5,13 +5,13 @@ import { z } from "zod";
 
 const UpdateCycleSchema = z.object({
   id: z.string(),
-  estadoFenologico: z.enum(["DORMANCIA","BROTAMIENTO","FLORACION","CUAJA","CRECIMIENTO_FRUTO","LLENADO_FRUTO","MADUREZ","POSTCOSECHA"]).optional(),
-  horasFrioAcumuladas: z.number().int().nonnegative().optional(),
-  calibreEstimado: z.number().positive().optional().nullable(),
-  rendimientoEstimado: z.number().positive().optional().nullable(),
-  fechaCosechaEstimada: z.string().optional().nullable(),
-  destinoProduccion: z.enum(["EXPORTACION","MERCADO_INTERNO","INDUSTRIA","MIXTO"]).optional(),
-  notas: z.string().optional().nullable(),
+  phenologicalStage: z.enum(["DORMANCY","BUDBREAK","FLOWERING","FRUIT_SET","FRUIT_GROWTH","FRUIT_FILL","MATURITY","POST_HARVEST"]).optional(),
+  chillHoursAccumulated: z.number().int().nonnegative().optional(),
+  estimatedCalibration: z.number().positive().optional().nullable(),
+  estimatedYield: z.number().positive().optional().nullable(),
+  estimatedHarvestDate: z.string().optional().nullable(),
+  productionDestination: z.enum(["EXPORT","DOMESTIC_MARKET","INDUSTRY","MIXED"]).optional(),
+  notes: z.string().optional().nullable(),
 });
 
 // GET /api/cycles — user's active cycles
@@ -46,7 +46,7 @@ export async function PATCH(req: NextRequest) {
 
   try {
     const body = UpdateCycleSchema.parse(await req.json());
-    const { id, fechaCosechaEstimada, ...rest } = body;
+    const { id, estimatedHarvestDate, ...rest } = body;
 
     const cycle = await db.productionCycle.findFirst({
       where: { id, crop: { lot: { farm: { owner: { clerkId: userId } } } } },
@@ -57,8 +57,8 @@ export async function PATCH(req: NextRequest) {
       where: { id },
       data: {
         ...rest,
-        ...(fechaCosechaEstimada !== undefined && {
-          fechaCosechaEstimada: fechaCosechaEstimada ? new Date(fechaCosechaEstimada) : null,
+        ...(estimatedHarvestDate !== undefined && {
+          estimatedHarvestDate: estimatedHarvestDate ? new Date(estimatedHarvestDate) : null,
         }),
       },
     });

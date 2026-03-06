@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { fetchWeather } from "@/lib/weather/open-meteo";
-import { detectarRiesgos } from "@/lib/weather/indicators";
+import { detectRisks } from "@/lib/weather/indicators";
 import { CurrentWeatherCard } from "@/components/weather/current-weather-card";
 import { ForecastStrip } from "@/components/weather/forecast-strip";
 import { RiskBanners } from "@/components/weather/risk-banners";
@@ -41,23 +41,23 @@ async function getWeatherData(clerkId: string) {
 
   const weather = await fetchWeather(farm.latitude, farm.longitude);
 
-  const ciclosActivos = farm.lots
+  const activeCycles = farm.lots
     .flatMap((l) => l.crops)
     .flatMap((c) =>
-      c.productionCycles.map((cy) => ({ ...cy, variedad: c.variety }))
+      c.productionCycles.map((cy) => ({ ...cy, variety: c.variety }))
     )
     .filter((cy) => cy.isActive);
 
-  const cicloRef = ciclosActivos[0];
+  const cycleRef = activeCycles[0];
 
-  const riesgos = detectarRiesgos(
+  const risks = detectRisks(
     weather.forecast,
-    cicloRef?.estadoFenologico ?? "CUAJA",
-    cicloRef?.horasFrioAcumuladas ?? 0,
+    cycleRef?.phenologicalStage ?? "FRUIT_SET",
+    cycleRef?.chillHoursAccumulated ?? 0,
     weather.current.humidity
   );
 
-  return { farm, weather, ciclosActivos, riesgos };
+  return { farm, weather, activeCycles, risks };
 }
 
 export default async function WeatherPage() {
@@ -77,8 +77,8 @@ export default async function WeatherPage() {
     );
   }
 
-  const { farm, weather, ciclosActivos, riesgos } = data;
-  const ahora = format(new Date(), "MMMM d, HH:mm'h'", { locale: enUS });
+  const { farm, weather, activeCycles, risks } = data;
+  const now = format(new Date(), "MMMM d, HH:mm'h'", { locale: enUS });
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -87,7 +87,7 @@ export default async function WeatherPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Weather</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {farm.commune}, {farm.region} · Updated {ahora}
+            {farm.commune}, {farm.region} · Updated {now}
           </p>
         </div>
         <div className="text-xs text-gray-400 text-right">
@@ -97,8 +97,8 @@ export default async function WeatherPage() {
       </div>
 
       {/* Risk alerts — critical ones go first */}
-      {riesgos.some((r) => r.severidad === "CRITICA") && (
-        <RiskBanners riesgos={riesgos.filter((r) => r.severidad === "CRITICA")} />
+      {risks.some((r) => r.severity === "CRITICAL") && (
+        <RiskBanners riesgos={risks.filter((r) => r.severity === "CRITICAL")} />
       )}
 
       {/* Main grid */}
@@ -114,12 +114,12 @@ export default async function WeatherPage() {
 
         {/* Cold hours per cycle */}
         <div className="space-y-3">
-          {ciclosActivos.slice(0, 2).map((ciclo) => (
+          {activeCycles.slice(0, 2).map((cycle) => (
             <ColdHoursCard
-              key={ciclo.id}
-              horasAcumuladas={ciclo.horasFrioAcumuladas}
-              estadoFenologico={ciclo.estadoFenologico}
-              variedad={ciclo.variedad}
+              key={cycle.id}
+              horasAcumuladas={cycle.chillHoursAccumulated}
+              phenologicalStage={cycle.phenologicalStage}
+              variedad={cycle.variety}
             />
           ))}
         </div>
@@ -129,17 +129,17 @@ export default async function WeatherPage() {
       <ForecastStrip forecast={weather.forecast} />
 
       {/* Warning/info alerts */}
-      {riesgos.filter((r) => r.severidad !== "CRITICA").length > 0 && (
+      {risks.filter((r) => r.severity !== "CRITICAL").length > 0 && (
         <div>
           <h2 className="text-sm font-semibold text-gray-700 mb-3">
             Alerts and recommendations
           </h2>
-          <RiskBanners riesgos={riesgos.filter((r) => r.severidad !== "CRITICA")} />
+          <RiskBanners riesgos={risks.filter((r) => r.severity !== "CRITICAL")} />
         </div>
       )}
 
       {/* No risks */}
-      {riesgos.length === 0 && (
+      {risks.length === 0 && (
         <RiskBanners riesgos={[]} />
       )}
 

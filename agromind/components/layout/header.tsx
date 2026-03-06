@@ -5,26 +5,30 @@ import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 
-async function getUnreadAlertsCount(userId: string) {
-  const user = await db.user.findUnique({
-    where: { clerkId: userId },
-    select: {
-      farms: {
-        select: {
-          _count: {
-            select: { alerts: { where: { isRead: false } } },
+async function getUnreadAlertsCount(userId: string): Promise<number> {
+  try {
+    const user = await db.user.findUnique({
+      where: { clerkId: userId },
+      select: {
+        farms: {
+          select: {
+            _count: {
+              select: { alerts: { where: { isRead: false } } },
+            },
           },
         },
       },
-    },
-  });
+    });
 
-  return (
-    user?.farms.reduce(
-      (sum, farm) => sum + farm._count.alerts,
-      0
-    ) ?? 0
-  );
+    return (
+      user?.farms.reduce(
+        (sum, farm) => sum + farm._count.alerts,
+        0
+      ) ?? 0
+    );
+  } catch {
+    return 0;
+  }
 }
 
 export async function Header() {
@@ -38,7 +42,6 @@ export async function Header() {
       </div>
 
       <div className="flex items-center gap-4">
-        {/* Botón de alertas */}
         <Link
           href="/alerts"
           className="relative p-2 rounded-md hover:bg-gray-50 transition-colors"
@@ -54,7 +57,6 @@ export async function Header() {
           )}
         </Link>
 
-        {/* Avatar Clerk */}
         <UserButton afterSignOutUrl="/sign-in" />
       </div>
     </header>

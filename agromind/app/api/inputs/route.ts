@@ -6,7 +6,7 @@ import { z } from "zod";
 const CreateInputSchema = z.object({
   productionCycleId: z.string(),
   date: z.string(),
-  category: z.enum(["FERTILIZANTE","HERBICIDA","FUNGICIDA","INSECTICIDA","RIEGO","MATERIAL_VEGETAL","OTRO"]),
+  category: z.enum(["FERTILIZER","HERBICIDE","FUNGICIDE","INSECTICIDE","IRRIGATION","PLANT_MATERIAL","OTHER"]),
   name: z.string().min(1),
   quantity: z.number().positive(),
   unit: z.string().min(1),

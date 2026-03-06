@@ -5,7 +5,7 @@ import { ArrowLeft, MapPin, Layers, Leaf, AlertTriangle } from "lucide-react";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ESTADO_FENOLOGICO_LABELS, SEVERITY_COLOR } from "@/types";
+import { PHENOLOGICAL_STAGE_LABELS, SEVERITY_COLOR } from "@/types";
 
 async function getFarm(farmId: string, clerkId: string) {
   return db.farm.findFirst({
@@ -174,11 +174,11 @@ export default async function FarmDetailPage({
                             className="bg-green-50 rounded p-1.5 text-xs text-green-800"
                           >
                             <span className="font-medium">
-                              {ESTADO_FENOLOGICO_LABELS[cycle.estadoFenologico]}
+                              {PHENOLOGICAL_STAGE_LABELS[cycle.phenologicalStage]}
                             </span>
-                            {cycle.horasFrioAcumuladas != null && (
+                            {cycle.chillHoursAccumulated != null && (
                               <span className="ml-2 text-green-600">
-                                · {cycle.horasFrioAcumuladas}h chill
+                                · {cycle.chillHoursAccumulated}h chill
                               </span>
                             )}
                           </div>

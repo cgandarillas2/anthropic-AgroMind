@@ -1,19 +1,19 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { UMBRALES, getHorasFrioColor, getHorasFrioPct } from "@/lib/weather/indicators";
-import { ESTADO_FENOLOGICO_LABELS } from "@/types";
-import type { EstadoFenologico } from "@prisma/client";
+import { UMBRALES, getChillHoursColor, getChillHoursPct } from "@/lib/weather/indicators";
+import { PHENOLOGICAL_STAGE_LABELS } from "@/types";
+import type { PhenologicalStage } from "@prisma/client";
 import { cn } from "@/lib/utils";
 
 interface Props {
   horasAcumuladas: number;
-  estadoFenologico: EstadoFenologico;
+  phenologicalStage: PhenologicalStage;
   variedad: string;
 }
 
-export function ColdHoursCard({ horasAcumuladas, estadoFenologico, variedad }: Props) {
-  const pct = getHorasFrioPct(horasAcumuladas);
-  const color = getHorasFrioColor(horasAcumuladas);
-  const metaCumplida = horasAcumuladas >= UMBRALES.HORAS_FRIO_META;
+export function ColdHoursCard({ horasAcumuladas, phenologicalStage, variedad }: Props) {
+  const pct = getChillHoursPct(horasAcumuladas);
+  const color = getChillHoursColor(horasAcumuladas);
+  const targetMet = horasAcumuladas >= UMBRALES.HORAS_FRIO_META;
 
   return (
     <Card>
@@ -33,12 +33,12 @@ export function ColdHoursCard({ horasAcumuladas, estadoFenologico, variedad }: P
           </span>
         </div>
 
-        {/* Barra de progreso */}
+        {/* Progress bar */}
         <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
           <div
             className={cn(
               "h-3 rounded-full transition-all",
-              metaCumplida
+              targetMet
                 ? "bg-green-500"
                 : pct >= 87.5
                 ? "bg-yellow-400"
@@ -50,18 +50,18 @@ export function ColdHoursCard({ horasAcumuladas, estadoFenologico, variedad }: P
 
         <div className="flex items-center justify-between text-xs text-gray-500">
           <span>{pct}% completed</span>
-          {!metaCumplida && (
+          {!targetMet && (
             <span className="text-amber-600 font-medium">
               Missing {UMBRALES.HORAS_FRIO_META - horasAcumuladas}h
             </span>
           )}
-          {metaCumplida && (
+          {targetMet && (
             <span className="text-green-600 font-medium">✓ Target met</span>
           )}
         </div>
 
         <div className="text-xs text-gray-400 border-t pt-2">
-          Stage: {ESTADO_FENOLOGICO_LABELS[estadoFenologico]}
+          Stage: {PHENOLOGICAL_STAGE_LABELS[phenologicalStage]}
         </div>
       </CardContent>
     </Card>

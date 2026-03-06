@@ -24,13 +24,13 @@ interface Props {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  FERTILIZANTE: "bg-green-100 text-green-700",
-  HERBICIDA:    "bg-yellow-100 text-yellow-700",
-  FUNGICIDA:    "bg-purple-100 text-purple-700",
-  INSECTICIDA:  "bg-red-100 text-red-700",
-  RIEGO:        "bg-blue-100 text-blue-700",
-  MATERIAL_VEGETAL: "bg-emerald-100 text-emerald-700",
-  OTRO:         "bg-gray-100 text-gray-600",
+  FERTILIZER:     "bg-green-100 text-green-700",
+  HERBICIDE:      "bg-yellow-100 text-yellow-700",
+  FUNGICIDE:      "bg-purple-100 text-purple-700",
+  INSECTICIDE:    "bg-red-100 text-red-700",
+  IRRIGATION:     "bg-blue-100 text-blue-700",
+  PLANT_MATERIAL: "bg-emerald-100 text-emerald-700",
+  OTHER:          "bg-gray-100 text-gray-600",
 };
 
 export function InputsClient({ inputs: initial, cycles }: Props) {
@@ -42,7 +42,7 @@ export function InputsClient({ inputs: initial, cycles }: Props) {
   const [form, setForm] = useState({
     productionCycleId: cycles[0]?.id ?? "",
     date: new Date().toISOString().split("T")[0],
-    category: "FERTILIZANTE",
+    category: "FERTILIZER",
     name: "",
     quantity: "",
     unit: "kg",
@@ -90,7 +90,7 @@ export function InputsClient({ inputs: initial, cycles }: Props) {
 
   return (
     <div className="space-y-5">
-      {/* Resumen por categoría */}
+      {/* Summary by category */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="col-span-2 md:col-span-1 bg-emerald-50 border-emerald-200">
           <CardContent className="pt-4 pb-3">
@@ -121,7 +121,7 @@ export function InputsClient({ inputs: initial, cycles }: Props) {
           ))}
       </div>
 
-      {/* Tabla */}
+      {/* Table */}
       <Card>
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
@@ -206,7 +206,7 @@ export function InputsClient({ inputs: initial, cycles }: Props) {
         </CardContent>
       </Card>
 
-      {/* Dialog agregar */}
+      {/* Add dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -265,7 +265,7 @@ export function InputsClient({ inputs: initial, cycles }: Props) {
                 <Select value={form.unit} onValueChange={(v) => setForm((f) => ({ ...f, unit: v }))}>
                   <SelectTrigger className="mt-1 h-8 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {["kg","L","unidad","m³","bolsa","caja"].map((u) => (
+                    {["kg","L","unit","m³","bag","box"].map((u) => (
                       <SelectItem key={u} value={u}>{u}</SelectItem>
                     ))}
                   </SelectContent>

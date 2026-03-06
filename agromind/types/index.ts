@@ -8,29 +8,37 @@ import type {
   WeatherLog,
   Alert,
   User,
-  EstadoFenologico,
-  DestinoProduccion,
+  IoTDevice,
+  IoTReading,
+  PhenologicalStage,
+  ProductionDestination,
   InputCategory,
   LaborActivity,
   AlertType,
   AlertSeverity,
   AlertSource,
   UserRole,
+  IoTDeviceType,
+  IoTDeviceStatus,
 } from "@prisma/client";
 
 // Re-export Prisma enums
 export type {
-  EstadoFenologico,
-  DestinoProduccion,
+  PhenologicalStage,
+  ProductionDestination,
   InputCategory,
   LaborActivity,
   AlertType,
   AlertSeverity,
   AlertSource,
   UserRole,
+  IoTDeviceType,
+  IoTDeviceStatus,
+  IoTDevice,
+  IoTReading,
 };
 
-// ─── Tipos compuestos (include relations) ───
+// ─── Composite types (include relations) ───
 
 export type FarmWithLots = Farm & {
   lots: (Lot & {
@@ -54,7 +62,7 @@ export type AlertWithFarm = Alert & {
   farm: Pick<Farm, "id" | "name" | "commune">;
 };
 
-// ─── Payloads de API ───
+// ─── API Payloads ───
 
 export interface WeatherCurrent {
   tempC: number;
@@ -76,7 +84,7 @@ export interface WeatherForecastDay {
   windSpeedMaxKmh: number;
   weatherCode: number;
   etMm: number;
-  // Riesgo calculado para cerezos
+  // Calculated risks for cherries
   riesgoHelada: boolean;
   riesgoLluvia: boolean;
   riesgoCalor: boolean;
@@ -85,11 +93,11 @@ export interface WeatherForecastDay {
 export interface WeatherResponse {
   current: WeatherCurrent;
   forecast: WeatherForecastDay[];
-  // Horas frío acumuladas en el historial reciente
-  horasFrioAcumuladasPeriodo?: number;
+  // Chill hours accumulated in recent history
+  chillHoursAccumulatedPeriod?: number;
 }
 
-// ─── Payload del agente IA ───
+// ─── AI Agent Payload ───
 
 export interface AiReportRequest {
   farmId: string;
@@ -100,7 +108,7 @@ export interface AiReportRequest {
 export interface AiReportResponse {
   reportType: AiReportRequest["reportType"];
   generatedAt: string;
-  content: string; // markdown del reporte
+  content: string; // markdown report
   alerts: {
     type: AlertType;
     severity: AlertSeverity;
@@ -114,7 +122,7 @@ export interface AiChatMessage {
   content: string;
 }
 
-// ─── Tipos de formularios ───
+// ─── Form Types ───
 
 export interface CreateFarmInput {
   name: string;
@@ -138,13 +146,13 @@ export interface CreateCycleInput {
   cropId: string;
   season: string;
   startDate: string;
-  estadoFenologico: EstadoFenologico;
-  horasFrioAcumuladas: number;
-  destinoProduccion: DestinoProduccion;
-  calibreEstimado?: number;
-  rendimientoEstimado?: number;
-  fechaCosechaEstimada?: string;
-  notas?: string;
+  phenologicalStage: PhenologicalStage;
+  chillHoursAccumulated: number;
+  productionDestination: ProductionDestination;
+  estimatedCalibration?: number;
+  estimatedYield?: number;
+  estimatedHarvestDate?: string;
+  notes?: string;
 }
 
 export interface CreateInputRecord {
@@ -169,7 +177,7 @@ export interface CreateLaborRecordInput {
   notes?: string;
 }
 
-// ─── Resumen financiero del ciclo ───
+// ─── Cycle financial summary ───
 
 export interface CycleCostSummary {
   totalInputsCost: number;
@@ -182,60 +190,91 @@ export interface CycleCostSummary {
 
 // ─── Labels for enums (UI) ───
 
-export const ESTADO_FENOLOGICO_LABELS: Record<EstadoFenologico, string> = {
-  DORMANCIA: "Dormancy",
-  BROTAMIENTO: "Budbreak",
-  FLORACION: "Flowering",
-  CUAJA: "Set",
-  CRECIMIENTO_FRUTO: "Growth",
-  LLENADO_FRUTO: "Filling",
-  MADUREZ: "Harvest",
-  POSTCOSECHA: "Post-harvest",
+export const PHENOLOGICAL_STAGE_LABELS: Record<PhenologicalStage, string> = {
+  DORMANCY:     "Dormancy",
+  BUDBREAK:     "Budbreak",
+  FLOWERING:    "Flowering",
+  FRUIT_SET:    "Fruit Set",
+  FRUIT_GROWTH: "Fruit Growth",
+  FRUIT_FILL:   "Fruit Fill",
+  MATURITY:     "Maturity",
+  POST_HARVEST: "Post-harvest",
 };
 
-export const DESTINO_LABELS: Record<DestinoProduccion, string> = {
-  EXPORTACION: "Export",
-  MERCADO_INTERNO: "Domestic Market",
-  INDUSTRIA: "Industry",
-  MIXTO: "Mixed",
+export const DESTINATION_LABELS: Record<ProductionDestination, string> = {
+  EXPORT:          "Export",
+  DOMESTIC_MARKET: "Domestic Market",
+  INDUSTRY:        "Industry",
+  MIXED:           "Mixed",
 };
 
 export const INPUT_CATEGORY_LABELS: Record<InputCategory, string> = {
-  FERTILIZANTE: "Fertilizer",
-  HERBICIDA: "Herbicide",
-  FUNGICIDA: "Fungicide",
-  INSECTICIDA: "Insecticide",
-  RIEGO: "Irrigation",
-  MATERIAL_VEGETAL: "Plant Material",
-  OTRO: "Other",
+  FERTILIZER:     "Fertilizer",
+  HERBICIDE:      "Herbicide",
+  FUNGICIDE:      "Fungicide",
+  INSECTICIDE:    "Insecticide",
+  IRRIGATION:     "Irrigation",
+  PLANT_MATERIAL: "Plant Material",
+  OTHER:          "Other",
 };
 
 export const LABOR_ACTIVITY_LABELS: Record<LaborActivity, string> = {
-  PODA: "Pruning",
-  RALEO: "Thinning",
-  APLICACION_FITOSANITARIA: "Phytosanitary Application",
-  RIEGO: "Irrigation",
-  FERTILIZACION: "Fertilization",
-  COSECHA: "Harvest",
-  EMPAQUE: "Packing",
-  MONITOREO: "Monitoring",
-  INSTALACION_MALLA: "Net Installation",
-  OTRO: "Other",
+  PRUNING:               "Pruning",
+  THINNING:              "Thinning",
+  PESTICIDE_APPLICATION: "Pesticide Application",
+  IRRIGATION:            "Irrigation",
+  FERTILIZATION:         "Fertilization",
+  HARVEST:               "Harvest",
+  PACKING:               "Packing",
+  MONITORING:            "Monitoring",
+  NETTING_INSTALLATION:  "Netting Installation",
+  OTHER:                 "Other",
 };
 
 export const ALERT_TYPE_LABELS: Record<AlertType, string> = {
-  HELADA: "Frost",
-  LLUVIA_COSECHA: "Harvest Rain",
-  DEFICIT_HORAS_FRIO: "Chill Hours Deficit",
-  GOLPE_CALOR: "Heat Stress",
-  VIENTO_FUERTE: "Strong Wind",
-  HUMEDAD_ALTA: "High Humidity",
-  RIEGO_PENDIENTE: "Pending Irrigation",
-  GENERAL: "General Alert",
+  FROST:               "Frost",
+  HARVEST_RAIN:        "Harvest Rain",
+  CHILL_HOUR_DEFICIT:  "Chill Hours Deficit",
+  HEAT_WAVE:           "Heat Wave",
+  STRONG_WIND:         "Strong Wind",
+  HIGH_HUMIDITY:       "High Humidity",
+  IRRIGATION_PENDING:  "Pending Irrigation",
+  GENERAL:             "General Alert",
 };
 
 export const SEVERITY_COLOR: Record<AlertSeverity, string> = {
-  INFO: "blue",
-  ADVERTENCIA: "yellow",
-  CRITICA: "red",
+  INFO:     "blue",
+  WARNING:  "yellow",
+  CRITICAL: "red",
+};
+
+// ─── IoT Labels ───
+
+export const IOT_DEVICE_TYPE_LABELS: Record<IoTDeviceType, string> = {
+  WEATHER_STATION:      "Weather Station",
+  TEMPERATURE_HUMIDITY: "Temp/Humidity",
+  SOIL_MOISTURE:        "Soil Moisture",
+  FROST_SENSOR:         "Frost Sensor",
+  FLOW_METER:           "Flow Meter",
+  LEAF_WETNESS:         "Leaf Wetness",
+};
+
+export const IOT_DEVICE_TYPE_ICONS: Record<IoTDeviceType, string> = {
+  WEATHER_STATION:      "🌤️",
+  TEMPERATURE_HUMIDITY: "🌡️",
+  SOIL_MOISTURE:        "💧",
+  FROST_SENSOR:         "🧊",
+  FLOW_METER:           "🚿",
+  LEAF_WETNESS:         "🌿",
+};
+
+export const IOT_DEVICE_STATUS_STYLES: Record<IoTDeviceStatus, { badge: string; dot: string; label: string }> = {
+  ONLINE:      { badge: "bg-green-100 text-green-700",  dot: "bg-green-500",  label: "Online"      },
+  OFFLINE:     { badge: "bg-red-100 text-red-700",      dot: "bg-red-500",    label: "Offline"     },
+  MAINTENANCE: { badge: "bg-yellow-100 text-yellow-700", dot: "bg-yellow-500", label: "Maintenance" },
+};
+
+export type IoTDeviceWithReadings = IoTDevice & {
+  readings: IoTReading[];
+  lot?: { id: string; name: string } | null;
 };

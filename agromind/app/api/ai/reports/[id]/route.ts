@@ -10,14 +10,19 @@ export async function GET(
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id } = await params;
-  const report = await db.savedReport.findUnique({ where: { id } });
+  try {
+    const { id } = await params;
+    const report = await db.savedReport.findUnique({ where: { id } });
 
-  if (!report || report.clerkId !== userId) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!report || report.clerkId !== userId) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(report);
+  } catch (e) {
+    console.error("[REPORT_GET]", e);
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
-
-  return NextResponse.json(report);
 }
 
 // DELETE /api/ai/reports/[id]
@@ -28,13 +33,18 @@ export async function DELETE(
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id } = await params;
-  const report = await db.savedReport.findUnique({ where: { id } });
+  try {
+    const { id } = await params;
+    const report = await db.savedReport.findUnique({ where: { id } });
 
-  if (!report || report.clerkId !== userId) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!report || report.clerkId !== userId) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    await db.savedReport.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (e) {
+    console.error("[REPORT_DELETE]", e);
+    return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
-
-  await db.savedReport.delete({ where: { id } });
-  return NextResponse.json({ success: true });
 }

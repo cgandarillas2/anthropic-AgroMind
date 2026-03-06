@@ -129,7 +129,7 @@ export function FinanceClient() {
     );
   }
 
-  if (!data) return <p className="text-gray-400 py-10 text-center">Sin datos disponibles.</p>;
+  if (!data) return <p className="text-gray-400 py-10 text-center">No data available.</p>;
 
   const { summary, byCategory, byActivity, monthly, cycleSummaries, topExpenses } = data;
 
@@ -151,7 +151,7 @@ export function FinanceClient() {
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-2 mb-1">
               <DollarSign className="h-4 w-4 text-gray-400" />
-              <p className="text-xs text-gray-500">Gasto total</p>
+              <p className="text-xs text-gray-500">Total expenses</p>
             </div>
             <p className="text-xl font-bold text-gray-900">{clp(summary.totalCost)}</p>
           </CardContent>
@@ -160,14 +160,14 @@ export function FinanceClient() {
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-2 mb-1">
               <FlaskConical className="h-4 w-4 text-emerald-500" />
-              <p className="text-xs text-gray-500">Insumos</p>
+              <p className="text-xs text-gray-500">Inputs</p>
             </div>
             <p className="text-xl font-bold text-emerald-600">{clp(summary.totalInputsCost)}</p>
             <p className="text-xs text-gray-400 mt-0.5">
               {summary.totalCost > 0
                 ? Math.round((summary.totalInputsCost / summary.totalCost) * 100)
                 : 0}
-              % del total
+              % of total
             </p>
           </CardContent>
         </Card>
@@ -175,14 +175,14 @@ export function FinanceClient() {
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-2 mb-1">
               <Users className="h-4 w-4 text-blue-500" />
-              <p className="text-xs text-gray-500">Mano de obra</p>
+              <p className="text-xs text-gray-500">Labor</p>
             </div>
             <p className="text-xl font-bold text-blue-600">{clp(summary.totalLaborCost)}</p>
             <p className="text-xs text-gray-400 mt-0.5">
               {summary.totalCost > 0
                 ? Math.round((summary.totalLaborCost / summary.totalCost) * 100)
                 : 0}
-              % del total
+              % of total
             </p>
           </CardContent>
         </Card>
@@ -190,7 +190,7 @@ export function FinanceClient() {
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-2 mb-1">
               <Layers className="h-4 w-4 text-gray-400" />
-              <p className="text-xs text-gray-500">Ciclos activos</p>
+              <p className="text-xs text-gray-500">Active cycles</p>
             </div>
             <p className="text-xl font-bold text-gray-900">{summary.cycleCount}</p>
           </CardContent>
@@ -202,7 +202,7 @@ export function FinanceClient() {
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-gray-500" />
-            Gasto mensual — temporada activa
+            Monthly expenses — active season
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -219,7 +219,7 @@ export function FinanceClient() {
                 }
               />
               <Tooltip content={<MonthlyTooltip />} />
-              <Legend wrapperStyle={{ fontSize: "12px" }} formatter={(v) => (v === "insumos" ? "Insumos" : "Mano de obra")} />
+              <Legend wrapperStyle={{ fontSize: "12px" }} formatter={(v) => (v === "insumos" ? "Inputs" : "Labor")} />
               <Bar dataKey="insumos" name="insumos" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
               <Bar dataKey="manoDeObra" name="manoDeObra" stackId="a" fill="#3b82f6" radius={[3, 3, 0, 0]} />
             </BarChart>
@@ -234,12 +234,12 @@ export function FinanceClient() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <FlaskConical className="h-4 w-4 text-emerald-500" />
-              Insumos por categoría
+              Inputs by category
             </CardTitle>
           </CardHeader>
           <CardContent>
             {categoryPieData.length === 0 ? (
-              <p className="text-xs text-gray-400 py-8 text-center">Sin datos</p>
+              <p className="text-xs text-gray-400 py-8 text-center">No data</p>
             ) : (
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
@@ -271,12 +271,12 @@ export function FinanceClient() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <Users className="h-4 w-4 text-blue-500" />
-              Mano de obra por actividad
+              Labor by activity
             </CardTitle>
           </CardHeader>
           <CardContent>
             {activityPieData.length === 0 ? (
-              <p className="text-xs text-gray-400 py-8 text-center">Sin datos</p>
+              <p className="text-xs text-gray-400 py-8 text-center">No data</p>
             ) : (
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
@@ -310,7 +310,7 @@ export function FinanceClient() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <Layers className="h-4 w-4 text-gray-500" />
-              Resumen por ciclo
+              Summary by cycle
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -351,7 +351,7 @@ export function FinanceClient() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <ChevronRight className="h-4 w-4 text-gray-500" />
-              Top 5 mayores gastos en insumos
+              Top 5 highest input expenses
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">

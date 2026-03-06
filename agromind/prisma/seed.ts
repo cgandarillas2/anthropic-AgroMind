@@ -5,7 +5,7 @@
  * 2 lots of 5 ha each, Regina (Lot A) and Bing (Lot B).
  *
  * BASE_DATE is dynamic (today), so the data is always coherent
- * with the current date. In March, cherries are in POSTCOSECHA.
+ * with the current date. In March, cherries are in POST_HARVEST.
  *
  * 2025/2026 season:
  *  - Dormancy: Jun-Aug 2025
@@ -14,7 +14,7 @@
  *  - Fruit fill: Dec 2025 - Jan 2026
  *  - Harvest Bing: Dec 28, 2025
  *  - Harvest Regina: Jan 15, 2026
- *  - Current stage: POSTCOSECHA (Feb-Mar 2026)
+ *  - Current stage: POST_HARVEST (Feb-Mar 2026)
  */
 
 import * as dotenv from "dotenv";
@@ -23,14 +23,16 @@ dotenv.config();
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import {
-  EstadoFenologico,
-  DestinoProduccion,
+  PhenologicalStage,
+  ProductionDestination,
   InputCategory,
   LaborActivity,
   AlertType,
   AlertSeverity,
   AlertSource,
   UserRole,
+  IoTDeviceType,
+  IoTDeviceStatus,
 } from "@prisma/client";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
@@ -68,15 +70,15 @@ async function main() {
   console.log(`✅ User created: ${user.name}`);
 
   // ─────────────────────────────────────────────
-  // 2. FARM - Fundo Los Nogales, Curicó
+  // 2. FARM - Los Nogales Farm, Curicó
   // ─────────────────────────────────────────────
   const farm = await prisma.farm.upsert({
     where: { id: "farm_curico_001" },
     update: {},
     create: {
       id: "farm_curico_001",
-      name: "Fundo Los Nogales",
-      address: "Camino Los Nogales s/n, sector Romeral",
+      name: "Los Nogales Farm",
+      address: "Los Nogales Road s/n, Romeral sector",
       region: "Maule",
       commune: "Curicó",
       latitude: -34.9756,
@@ -155,7 +157,7 @@ async function main() {
 
   // ─────────────────────────────────────────────
   // 5. ACTIVE PRODUCTION CYCLES (2025/2026 season)
-  //    Current stage: POSTCOSECHA (Feb-Mar 2026)
+  //    Current stage: POST_HARVEST (Feb-Mar 2026)
   //    Harvest completed:
   //      - Bing: December 28, 2025
   //      - Regina: January 15, 2026
@@ -170,13 +172,13 @@ async function main() {
       season: "2025/2026",
       startDate: SEASON_START,
       isActive: true,
-      estadoFenologico: EstadoFenologico.POSTCOSECHA,
-      horasFrioAcumuladas: 847,
-      calibreEstimado: 29.8, // mm — final achieved caliber
-      rendimientoEstimado: 13800, // kg/ha — final yield
-      fechaCosechaEstimada: HARVEST_REGINA, // Jan 15, 2026 (completed)
-      destinoProduccion: DestinoProduccion.EXPORTACION,
-      notas:
+      phenologicalStage: PhenologicalStage.POST_HARVEST,
+      chillHoursAccumulated: 847,
+      estimatedCalibration: 29.8, // mm — final achieved caliber
+      estimatedYield: 13800, // kg/ha — final yield
+      estimatedHarvestDate: HARVEST_REGINA, // Jan 15, 2026 (completed)
+      productionDestination: ProductionDestination.EXPORT,
+      notes:
         "2025/2026 season completed successfully. Harvest Jan 15, 2026: 13.8 t/ha, 78% JJ/J export caliber. Minor cracking due to Jan 12 rain (3.2mm) — covered by netting. Post-harvest pruning to begin in March.",
       cropId: cropA.id,
     },
@@ -190,19 +192,19 @@ async function main() {
       season: "2025/2026",
       startDate: SEASON_START,
       isActive: true,
-      estadoFenologico: EstadoFenologico.POSTCOSECHA,
-      horasFrioAcumuladas: 823,
-      calibreEstimado: 27.5, // mm — final achieved caliber
-      rendimientoEstimado: 12100, // kg/ha — final yield
-      fechaCosechaEstimada: HARVEST_BING, // Dec 28, 2025 (completed)
-      destinoProduccion: DestinoProduccion.MIXTO,
-      notas:
+      phenologicalStage: PhenologicalStage.POST_HARVEST,
+      chillHoursAccumulated: 823,
+      estimatedCalibration: 27.5, // mm — final achieved caliber
+      estimatedYield: 12100, // kg/ha — final yield
+      estimatedHarvestDate: HARVEST_BING, // Dec 28, 2025 (completed)
+      productionDestination: ProductionDestination.MIXED,
+      notes:
         "2025/2026 season. Harvest Dec 28, 2025: 12.1 t/ha, 64% export (60% J, 4% JJ), 36% domestic market. Heat wave in Dec (3 days >36°C) reduced caliber 0.5mm vs projection. Planning: increase rain cover in Dec for next season.",
       cropId: cropB.id,
     },
   });
   console.log(
-    `✅ Active cycles (POSTCOSECHA): Regina harvested ${HARVEST_REGINA.toLocaleDateString("en-US")} | Bing harvested ${HARVEST_BING.toLocaleDateString("en-US")}`
+    `✅ Active cycles (POST_HARVEST): Regina harvested ${HARVEST_REGINA.toLocaleDateString("en-US")} | Bing harvested ${HARVEST_BING.toLocaleDateString("en-US")}`
   );
 
   // ─────────────────────────────────────────────
@@ -215,7 +217,7 @@ async function main() {
     {
       productionCycleId: cycleA.id,
       date: daysAgo(21),
-      category: InputCategory.FUNGICIDA,
+      category: InputCategory.FUNGICIDE,
       name: "Fludioxonil 25 SC (Switch)",
       quantity: 6,
       unit: "L",
@@ -227,7 +229,7 @@ async function main() {
     {
       productionCycleId: cycleB.id,
       date: daysAgo(21),
-      category: InputCategory.FUNGICIDA,
+      category: InputCategory.FUNGICIDE,
       name: "Fludioxonil 25 SC (Switch)",
       quantity: 5,
       unit: "L",
@@ -239,7 +241,7 @@ async function main() {
     {
       productionCycleId: cycleA.id,
       date: daysAgo(18),
-      category: InputCategory.FERTILIZANTE,
+      category: InputCategory.FERTILIZER,
       name: "Zinc sulfate (ZnSO₄ 21%)",
       quantity: 30,
       unit: "kg",
@@ -251,7 +253,7 @@ async function main() {
     {
       productionCycleId: cycleB.id,
       date: daysAgo(18),
-      category: InputCategory.FERTILIZANTE,
+      category: InputCategory.FERTILIZER,
       name: "Zinc sulfate (ZnSO₄ 21%)",
       quantity: 25,
       unit: "kg",
@@ -264,7 +266,7 @@ async function main() {
     {
       productionCycleId: cycleA.id,
       date: daysAgo(14),
-      category: InputCategory.FERTILIZANTE,
+      category: InputCategory.FERTILIZER,
       name: "Urea 46%",
       quantity: 120,
       unit: "kg",
@@ -276,7 +278,7 @@ async function main() {
     {
       productionCycleId: cycleB.id,
       date: daysAgo(14),
-      category: InputCategory.FERTILIZANTE,
+      category: InputCategory.FERTILIZER,
       name: "Urea 46%",
       quantity: 100,
       unit: "kg",
@@ -288,7 +290,7 @@ async function main() {
     {
       productionCycleId: cycleA.id,
       date: daysAgo(11),
-      category: InputCategory.RIEGO,
+      category: InputCategory.IRRIGATION,
       name: "Irrigation water (m³)",
       quantity: 1800,
       unit: "m³",
@@ -300,7 +302,7 @@ async function main() {
     {
       productionCycleId: cycleB.id,
       date: daysAgo(11),
-      category: InputCategory.RIEGO,
+      category: InputCategory.IRRIGATION,
       name: "Irrigation water (m³)",
       quantity: 1800,
       unit: "m³",
@@ -313,7 +315,7 @@ async function main() {
     {
       productionCycleId: cycleA.id,
       date: daysAgo(6),
-      category: InputCategory.FERTILIZANTE,
+      category: InputCategory.FERTILIZER,
       name: "Boron (Solubor 20.5%)",
       quantity: 12,
       unit: "kg",
@@ -325,7 +327,7 @@ async function main() {
     {
       productionCycleId: cycleB.id,
       date: daysAgo(6),
-      category: InputCategory.FERTILIZANTE,
+      category: InputCategory.FERTILIZER,
       name: "Boron (Solubor 20.5%)",
       quantity: 10,
       unit: "kg",
@@ -337,7 +339,7 @@ async function main() {
     {
       productionCycleId: cycleA.id,
       date: daysAgo(3),
-      category: InputCategory.FUNGICIDA,
+      category: InputCategory.FUNGICIDE,
       name: "Copper hydroxide (Kocide 35 WG)",
       quantity: 25,
       unit: "kg",
@@ -349,7 +351,7 @@ async function main() {
     {
       productionCycleId: cycleB.id,
       date: daysAgo(3),
-      category: InputCategory.FUNGICIDA,
+      category: InputCategory.FUNGICIDE,
       name: "Copper hydroxide (Kocide 35 WG)",
       quantity: 20,
       unit: "kg",
@@ -373,7 +375,7 @@ async function main() {
     {
       productionCycleId: cycleA.id,
       date: daysAgo(20),
-      activity: LaborActivity.APLICACION_FITOSANITARIA,
+      activity: LaborActivity.PESTICIDE_APPLICATION,
       workerCount: 4,
       hoursPerWorker: 8,
       totalHours: 32,
@@ -384,7 +386,7 @@ async function main() {
     {
       productionCycleId: cycleB.id,
       date: daysAgo(20),
-      activity: LaborActivity.APLICACION_FITOSANITARIA,
+      activity: LaborActivity.PESTICIDE_APPLICATION,
       workerCount: 4,
       hoursPerWorker: 8,
       totalHours: 32,
@@ -395,7 +397,7 @@ async function main() {
     {
       productionCycleId: cycleA.id,
       date: daysAgo(17),
-      activity: LaborActivity.MONITOREO,
+      activity: LaborActivity.MONITORING,
       workerCount: 2,
       hoursPerWorker: 6,
       totalHours: 12,
@@ -406,7 +408,7 @@ async function main() {
     {
       productionCycleId: cycleB.id,
       date: daysAgo(17),
-      activity: LaborActivity.MONITOREO,
+      activity: LaborActivity.MONITORING,
       workerCount: 2,
       hoursPerWorker: 5,
       totalHours: 10,
@@ -418,7 +420,7 @@ async function main() {
     {
       productionCycleId: cycleA.id,
       date: daysAgo(13),
-      activity: LaborActivity.RIEGO,
+      activity: LaborActivity.IRRIGATION,
       workerCount: 2,
       hoursPerWorker: 4,
       totalHours: 8,
@@ -429,7 +431,7 @@ async function main() {
     {
       productionCycleId: cycleA.id,
       date: daysAgo(10),
-      activity: LaborActivity.PODA,
+      activity: LaborActivity.PRUNING,
       workerCount: 8,
       hoursPerWorker: 9,
       totalHours: 72,
@@ -440,7 +442,7 @@ async function main() {
     {
       productionCycleId: cycleB.id,
       date: daysAgo(9),
-      activity: LaborActivity.PODA,
+      activity: LaborActivity.PRUNING,
       workerCount: 8,
       hoursPerWorker: 9,
       totalHours: 72,
@@ -452,7 +454,7 @@ async function main() {
     {
       productionCycleId: cycleA.id,
       date: daysAgo(5),
-      activity: LaborActivity.APLICACION_FITOSANITARIA,
+      activity: LaborActivity.PESTICIDE_APPLICATION,
       workerCount: 3,
       hoursPerWorker: 8,
       totalHours: 24,
@@ -463,7 +465,7 @@ async function main() {
     {
       productionCycleId: cycleB.id,
       date: daysAgo(5),
-      activity: LaborActivity.APLICACION_FITOSANITARIA,
+      activity: LaborActivity.PESTICIDE_APPLICATION,
       workerCount: 3,
       hoursPerWorker: 8,
       totalHours: 24,
@@ -474,7 +476,7 @@ async function main() {
     {
       productionCycleId: cycleA.id,
       date: daysAgo(2),
-      activity: LaborActivity.MONITOREO,
+      activity: LaborActivity.MONITORING,
       workerCount: 2,
       hoursPerWorker: 4,
       totalHours: 8,
@@ -526,10 +528,10 @@ async function main() {
     const timestamp = daysAgo(w.d);
     timestamp.setHours(12, 0, 0, 0);
 
-    const esBajoUmbralHelada = w.tMin < -1;
-    const contribuyeHorasFrio = w.tC < 7;
+    const isBelowFrostThreshold = w.tMin < -1;
+    const contributesToChillHours = w.tC < 7;
     // In post-harvest period, rain is less critical (no fruit on tree)
-    const esRiesgoLluvia = w.p > 5 && w.d <= 7;
+    const isRainRisk = w.p > 5 && w.d <= 7;
 
     // Approximate evapotranspiration (simplified Hargreaves)
     const etMm = Math.max(0, 0.0023 * (w.tC + 17.8) * Math.sqrt(w.tMax - w.tMin) * 8.5);
@@ -548,9 +550,9 @@ async function main() {
         windDirection: 185 + Math.floor(Math.random() * 30),
         humidity: w.h,
         etMm: Math.round(etMm * 10) / 10,
-        esBajoUmbralHelada,
-        contribuyeHorasFrio,
-        esRiesgoLluvia,
+        isBelowFrostThreshold,
+        contributesToChillHours,
+        isRainRisk,
       },
     });
   }
@@ -563,13 +565,13 @@ async function main() {
     {
       farmId: farm.id,
       type: AlertType.GENERAL,
-      severity: AlertSeverity.ADVERTENCIA,
+      severity: AlertSeverity.WARNING,
       title: "Leaf analysis pending — adjust post-harvest fertilization",
       description:
         "Samples sent to lab on March 2nd. Lot B showed visual symptoms of zinc deficiency during final fruit fill (Dec 2025). Expected results in 10 days. Fertilization plan for next season should be adjusted based on results.",
       recommendation:
         "While waiting for lab results, continue foliar zinc applications (ZnSO₄ 30 kg/ha). If lab confirms deficiency, apply additional soil zinc chelate (EDTA) 15 kg/ha in April before dormancy sets in.",
-      source: AlertSource.IA,
+      source: AlertSource.AI,
       isRead: false,
       isResolved: false,
       createdAt: daysAgo(2),
@@ -583,7 +585,7 @@ async function main() {
         "Summer pruning completed on both lots (Feb 23-24, 2026). Lot A (Regina): good canopy structure, minimal corrective work needed. Lot B (Bing): removed 15% more wood than planned due to heat-damaged and crossing branches. Tree skeleton in good condition for next season.",
       recommendation:
         "Complete wound sealing on Bing cuts >3cm with copper-based paste (Arbocel or similar). Schedule dormancy pruning for June 2026 to finalize canopy structure. Document removed wood volume for carbon tracking.",
-      source: AlertSource.IA,
+      source: AlertSource.AI,
       isRead: true,
       isResolved: false,
       createdAt: daysAgo(5),
@@ -591,13 +593,13 @@ async function main() {
     {
       farmId: farm.id,
       type: AlertType.GENERAL,
-      severity: AlertSeverity.CRITICA,
+      severity: AlertSeverity.CRITICAL,
       title: "Dormancy preparation — chill hour accumulation window opens in May",
       description:
         "Target: 800h below 7°C for both Regina and Bing. Chill accumulation season begins May 2026 in Curicó. Last season: Regina reached 847h, Bing 823h (both adequate). Weather forecast indicates a warmer-than-normal autumn (El Niño influence) — chill hour target may be at risk.",
       recommendation:
         "Plan evaporative cooling application (hydrogen cyanamide 0.5-1%) for late July if chill hour deficit exceeds 150h. Confirm dormancy-break protocol with agronomist by June 15. Monitor min temperatures from May 1 with automatic station.",
-      source: AlertSource.IA,
+      source: AlertSource.AI,
       isRead: false,
       isResolved: false,
       createdAt: daysAgo(0),
@@ -611,7 +613,7 @@ async function main() {
         "Season closed successfully. Regina Lot A: 13.8 t/ha (target 14 t/ha), 78% export JJ/J, income ~$42M CLP/ha. Bing Lot B: 12.1 t/ha (target 12 t/ha), 64% export, income ~$28M CLP/ha. Heat wave in December reduced Bing caliber by 0.5mm vs projection. Rain netting on Lot B proved effective (cracking <2%).",
       recommendation:
         "Key improvements for 2026/2027: (1) Install rain cover on Lot A (Regina) before December harvest. (2) Add over-canopy cooling system for Bing in heat event protocol. (3) Increase Bing rain netting coverage to 100% vs current 70%.",
-      source: AlertSource.IA,
+      source: AlertSource.AI,
       isRead: false,
       isResolved: false,
       createdAt: daysAgo(7),
@@ -624,6 +626,162 @@ async function main() {
   console.log(`✅ ${alertsData.length} alerts created`);
 
   // ─────────────────────────────────────────────
+  // 10. IoT DEVICES
+  //     5 sensors deployed across the two lots
+  //     Farm center: -34.9756, -71.2384 (Curicó)
+  // ─────────────────────────────────────────────
+  const devicesData = [
+    {
+      id: "iot_ws_lot_a",
+      name: "WS-A1 Weather Station",
+      type: IoTDeviceType.WEATHER_STATION,
+      status: IoTDeviceStatus.ONLINE,
+      latitude: -34.9733,
+      longitude: -71.2390,
+      batteryPct: 82,
+      serialNumber: "DAVIS-7210-A1",
+      notes: "Davis Vantage Pro2 station — northwest corner of Lot A",
+      lastSeenAt: daysAgo(0),
+      farmId: farm.id,
+      lotId: lotA.id,
+    },
+    {
+      id: "iot_ws_lot_b",
+      name: "WS-B1 Weather Station",
+      type: IoTDeviceType.WEATHER_STATION,
+      status: IoTDeviceStatus.ONLINE,
+      latitude: -34.9780,
+      longitude: -71.2377,
+      batteryPct: 91,
+      serialNumber: "DAVIS-7210-B1",
+      notes: "Davis Vantage Pro2 station — southeast sector of Lot B",
+      lastSeenAt: daysAgo(0),
+      farmId: farm.id,
+      lotId: lotB.id,
+    },
+    {
+      id: "iot_sm_lot_a",
+      name: "SM-A1 Soil Moisture",
+      type: IoTDeviceType.SOIL_MOISTURE,
+      status: IoTDeviceStatus.ONLINE,
+      latitude: -34.9741,
+      longitude: -71.2381,
+      batteryPct: 68,
+      serialNumber: "SENTEK-ENVIROScan-A1",
+      notes: "Sentek EnviroScan, 3 depths (20/40/60cm) — row 5, between irrigation lines",
+      lastSeenAt: daysAgo(0),
+      farmId: farm.id,
+      lotId: lotA.id,
+    },
+    {
+      id: "iot_sm_lot_b",
+      name: "SM-B1 Soil Moisture",
+      type: IoTDeviceType.SOIL_MOISTURE,
+      status: IoTDeviceStatus.OFFLINE,
+      latitude: -34.9774,
+      longitude: -71.2388,
+      batteryPct: 12,
+      serialNumber: "SENTEK-ENVIROScan-B1",
+      notes: "Sentek EnviroScan — Lot B, row 8. Battery low — needs replacement",
+      lastSeenAt: daysAgo(3),
+      farmId: farm.id,
+      lotId: lotB.id,
+    },
+    {
+      id: "iot_frost_lot_a",
+      name: "FS-A1 Frost Sensor",
+      type: IoTDeviceType.FROST_SENSOR,
+      status: IoTDeviceStatus.ONLINE,
+      latitude: -34.9745,
+      longitude: -71.2395,
+      batteryPct: 76,
+      serialNumber: "ADCON-T60-A1",
+      notes: "Adcon T60 canopy-level frost sensor — low depression point in Lot A (most frost-prone zone)",
+      lastSeenAt: daysAgo(0),
+      farmId: farm.id,
+      lotId: lotA.id,
+    },
+  ];
+
+  const devices: Record<string, { id: string }> = {};
+  for (const d of devicesData) {
+    const device = await prisma.ioTDevice.upsert({
+      where: { id: d.id },
+      update: { status: d.status, batteryPct: d.batteryPct, lastSeenAt: d.lastSeenAt },
+      create: d,
+    });
+    devices[d.id] = device;
+  }
+  console.log(`✅ ${devicesData.length} IoT devices created`);
+
+  // ─────────────────────────────────────────────
+  // 11. IoT READINGS (last 21 days — 4 readings/day each device)
+  // ─────────────────────────────────────────────
+  const readingHours = [7, 12, 18, 23]; // morning, noon, afternoon, night
+  let totalReadings = 0;
+
+  for (let day = 21; day >= 0; day--) {
+    for (const hour of readingHours) {
+      const ts = daysAgo(day);
+      ts.setHours(hour, 0, 0, 0);
+
+      // Temperature varies by hour and day (summer→autumn trend)
+      const baseTempC = 22 - day * 0.08; // slow cooling as autumn approaches
+      const hourFactor = hour === 7 ? -5 : hour === 12 ? 4 : hour === 18 ? 2 : -6;
+      const noise = (Math.random() - 0.5) * 2;
+      const tempC = Math.round((baseTempC + hourFactor + noise) * 10) / 10;
+      const humidityPct = Math.round(65 + (hour === 7 ? 15 : hour === 12 ? -10 : hour === 18 ? -5 : 20) + (Math.random() - 0.5) * 10);
+      const windKmh = Math.round(8 + Math.random() * 14);
+
+      // WS-A1: full weather station readings
+      await prisma.ioTReading.createMany({
+        data: [
+          { deviceId: "iot_ws_lot_a", metric: "temperature_c", value: tempC, unit: "°C", timestamp: ts },
+          { deviceId: "iot_ws_lot_a", metric: "humidity_pct", value: Math.min(95, humidityPct), unit: "%", timestamp: ts },
+          { deviceId: "iot_ws_lot_a", metric: "wind_speed_kmh", value: windKmh, unit: "km/h", timestamp: ts },
+        ],
+      });
+
+      // WS-B1: Lot B is slightly warmer (south-facing, lower elevation)
+      await prisma.ioTReading.createMany({
+        data: [
+          { deviceId: "iot_ws_lot_b", metric: "temperature_c", value: Math.round((tempC + 0.8 + (Math.random() - 0.5)) * 10) / 10, unit: "°C", timestamp: ts },
+          { deviceId: "iot_ws_lot_b", metric: "humidity_pct", value: Math.min(95, humidityPct - 3 + Math.round((Math.random() - 0.5) * 6)), unit: "%", timestamp: ts },
+        ],
+      });
+
+      // SM-A1: Soil moisture — 3 depths (online)
+      const smBase = 38 + day * 0.2; // gets slightly drier as we approach today
+      await prisma.ioTReading.createMany({
+        data: [
+          { deviceId: "iot_sm_lot_a", metric: "soil_moisture_20cm_pct", value: Math.round((smBase + (Math.random() - 0.5) * 4) * 10) / 10, unit: "%", timestamp: ts },
+          { deviceId: "iot_sm_lot_a", metric: "soil_moisture_40cm_pct", value: Math.round((smBase + 6 + (Math.random() - 0.5) * 3) * 10) / 10, unit: "%", timestamp: ts },
+          { deviceId: "iot_sm_lot_a", metric: "soil_moisture_60cm_pct", value: Math.round((smBase + 10 + (Math.random() - 0.5) * 2) * 10) / 10, unit: "%", timestamp: ts },
+        ],
+      });
+
+      // SM-B1: offline after day 3 — only data for days 21..4
+      if (day >= 4) {
+        await prisma.ioTReading.createMany({
+          data: [
+            { deviceId: "iot_sm_lot_b", metric: "soil_moisture_20cm_pct", value: Math.round((32 + (Math.random() - 0.5) * 5) * 10) / 10, unit: "%", timestamp: ts },
+            { deviceId: "iot_sm_lot_b", metric: "soil_moisture_40cm_pct", value: Math.round((38 + (Math.random() - 0.5) * 4) * 10) / 10, unit: "%", timestamp: ts },
+          ],
+        });
+      }
+
+      // FS-A1: Frost sensor — canopy level (typically 1-2°C colder than ambient at night)
+      const frostTempC = hour === 23 || hour === 7 ? tempC - 2.2 + (Math.random() - 0.5) * 1.5 : tempC - 0.5;
+      await prisma.ioTReading.create({
+        data: { deviceId: "iot_frost_lot_a", metric: "temperature_c", value: Math.round(frostTempC * 10) / 10, unit: "°C", timestamp: ts },
+      });
+
+      totalReadings += 3 + 2 + 3 + (day >= 4 ? 2 : 0) + 1;
+    }
+  }
+  console.log(`✅ ~${totalReadings} IoT readings created`);
+
+  // ─────────────────────────────────────────────
   // FINAL SUMMARY
   // ─────────────────────────────────────────────
   console.log("\n" + "─".repeat(55));
@@ -633,12 +791,13 @@ async function main() {
   console.log(`   Farm:    ${farm.name}, ${farm.commune}`);
   console.log(`   Area:    ${farm.totalArea} ha total (10 ha cherries)`);
   console.log(`   Lots:    2 × 5 ha (Regina Lot A | Bing Lot B)`);
-  console.log(`   Season:  2025/2026 — Stage: POSTCOSECHA (Feb-Mar 2026)`);
+  console.log(`   Season:  2025/2026 — Stage: POST_HARVEST (Feb-Mar 2026)`);
   console.log(`   Harvest: Regina Jan 15, 2026 | Bing Dec 28, 2025`);
   console.log(`   Inputs:  ${inputsData.length} records`);
   console.log(`   Labor:   ${laborData.length} records`);
   console.log(`   Weather: ${weatherHistory.length} days (3 weeks, ending today)`);
   console.log(`   Alerts:  ${alertsData.length} (1 critical, 1 warning, 2 info)`);
+  console.log(`   IoT:     ${devicesData.length} devices (2 WS, 2 Soil, 1 Frost) · ~${totalReadings} readings`);
   console.log("─".repeat(55));
   console.log("\n🔑 Test login (Clerk): carlos.fuentes@agromind.cl");
 }

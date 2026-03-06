@@ -2,55 +2,55 @@ import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { fetchWeather } from "@/lib/weather/open-meteo";
-import { detectarRiesgos, type RiesgoDetectado } from "@/lib/weather/indicators";
+import { detectRisks, type DetectedRisk } from "@/lib/weather/indicators";
 import type { AlertType } from "@prisma/client";
 
-const TRIGGER_METRIC: Record<RiesgoDetectado["tipo"], string> = {
-  HELADA:              "temperatura_minima",
-  LLUVIA_COSECHA:      "precipitacion_mm",
-  GOLPE_CALOR:         "temperatura_maxima",
-  VIENTO_FUERTE:       "velocidad_viento_kmh",
-  HUMEDAD_ALTA:        "humedad_relativa_pct",
-  DEFICIT_HORAS_FRIO:  "horas_frio_acumuladas",
+const TRIGGER_METRIC: Record<DetectedRisk["type"], string> = {
+  FROST:              "min_temperature",
+  HARVEST_RAIN:       "precipitation_mm",
+  HEAT_WAVE:          "max_temperature",
+  STRONG_WIND:        "wind_speed_kmh",
+  HIGH_HUMIDITY:      "relative_humidity_pct",
+  CHILL_HOUR_DEFICIT: "chill_hours_accumulated",
 };
 
 /**
  * Persists detected risks as Alert records.
  * Skips if an unresolved alert of the same type was already created today.
  */
-async function persistirAlertas(farmId: string, riesgos: RiesgoDetectado[]) {
-  if (!riesgos.length) return;
+async function persistAlerts(farmId: string, risks: DetectedRisk[]) {
+  if (!risks.length) return;
 
-  const hoyInicio = new Date();
-  hoyInicio.setHours(0, 0, 0, 0);
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
 
   // Fetch existing unresolved alerts created today to avoid duplicates
-  const existentes = await db.alert.findMany({
+  const existing = await db.alert.findMany({
     where: {
       farmId,
       isResolved: false,
-      createdAt: { gte: hoyInicio },
+      createdAt: { gte: todayStart },
     },
     select: { type: true },
   });
 
-  const tiposExistentes = new Set(existentes.map((a) => a.type));
+  const existingTypes = new Set(existing.map((a) => a.type));
 
-  const nuevas = riesgos.filter((r) => !tiposExistentes.has(r.tipo as AlertType));
+  const newAlerts = risks.filter((r) => !existingTypes.has(r.type as AlertType));
 
-  if (!nuevas.length) return;
+  if (!newAlerts.length) return;
 
   await db.alert.createMany({
-    data: nuevas.map((r) => ({
+    data: newAlerts.map((r) => ({
       farmId,
-      type:           r.tipo as AlertType,
-      severity:       r.severidad,
-      title:          r.titulo,
-      description:    r.descripcion,
-      recommendation: r.recomendacion,
-      triggerValue:   r.valorTrigger,
-      triggerMetric:  TRIGGER_METRIC[r.tipo],
-      source:         "AUTOMATICA",
+      type:           r.type as AlertType,
+      severity:       r.severity,
+      title:          r.title,
+      description:    r.description,
+      recommendation: r.recommendation,
+      triggerValue:   r.triggerValue,
+      triggerMetric:  TRIGGER_METRIC[r.type],
+      source:         "AUTOMATIC",
     })),
   });
 }
@@ -89,30 +89,30 @@ export async function GET(req: NextRequest) {
     const weatherData = await fetchWeather(farm.latitude, farm.longitude);
 
     // Extract most recent active cycle
-    const cicloActivo = farm.lots
+    const activeCycle = farm.lots
       .flatMap((l) => l.crops)
       .flatMap((c) => c.productionCycles)
       .find((cy) => cy.isActive);
 
     // Calculate risks for cherry trees
-    const riesgos = detectarRiesgos(
+    const risks = detectRisks(
       weatherData.forecast,
-      cicloActivo?.estadoFenologico ?? "CUAJA",
-      cicloActivo?.horasFrioAcumuladas ?? 0,
+      activeCycle?.phenologicalStage ?? "FRUIT_SET",
+      activeCycle?.chillHoursAccumulated ?? 0,
       weatherData.current.humidity
     );
 
     // Persist detected risks as alerts (fire-and-forget)
-    persistirAlertas(farm.id, riesgos).catch(console.error);
+    persistAlerts(farm.id, risks).catch(console.error);
 
     // Save today's weather log in DB (fire-and-forget)
-    const hoy = new Date();
-    hoy.setHours(12, 0, 0, 0);
+    const today = new Date();
+    today.setHours(12, 0, 0, 0);
     const todayForecast = weatherData.forecast[0];
     if (todayForecast) {
       db.weatherLog
         .upsert({
-          where: { farmId_timestamp: { farmId: farm.id, timestamp: hoy } },
+          where: { farmId_timestamp: { farmId: farm.id, timestamp: today } },
           update: {
             tempC: weatherData.current.tempC,
             tempMinC: todayForecast.tempMinC,
@@ -123,13 +123,13 @@ export async function GET(req: NextRequest) {
             humidity: weatherData.current.humidity,
             solarRadiation: weatherData.current.solarRadiation,
             etMm: todayForecast.etMm,
-            esBajoUmbralHelada: todayForecast.riesgoHelada,
-            esRiesgoLluvia: todayForecast.riesgoLluvia,
-            contribuyeHorasFrio: weatherData.current.tempC < 7,
+            isBelowFrostThreshold: todayForecast.riesgoHelada,
+            isRainRisk: todayForecast.riesgoLluvia,
+            contributesToChillHours: weatherData.current.tempC < 7,
           },
           create: {
             farmId: farm.id,
-            timestamp: hoy,
+            timestamp: today,
             tempC: weatherData.current.tempC,
             tempMinC: todayForecast.tempMinC,
             tempMaxC: todayForecast.tempMaxC,
@@ -139,9 +139,9 @@ export async function GET(req: NextRequest) {
             humidity: weatherData.current.humidity,
             solarRadiation: weatherData.current.solarRadiation,
             etMm: todayForecast.etMm,
-            esBajoUmbralHelada: todayForecast.riesgoHelada,
-            esRiesgoLluvia: todayForecast.riesgoLluvia,
-            contribuyeHorasFrio: weatherData.current.tempC < 7,
+            isBelowFrostThreshold: todayForecast.riesgoHelada,
+            isRainRisk: todayForecast.riesgoLluvia,
+            contributesToChillHours: weatherData.current.tempC < 7,
           },
         })
         .catch(console.error);
@@ -150,13 +150,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       farm: { id: farm.id, name: farm.name, commune: farm.commune, latitude: farm.latitude, longitude: farm.longitude },
       weather: weatherData,
-      riesgos,
-      cicloActivo: cicloActivo
+      risks,
+      activeCycle: activeCycle
         ? {
-            id: cicloActivo.id,
-            estadoFenologico: cicloActivo.estadoFenologico,
-            horasFrioAcumuladas: cicloActivo.horasFrioAcumuladas,
-            fechaCosechaEstimada: cicloActivo.fechaCosechaEstimada,
+            id: activeCycle.id,
+            phenologicalStage: activeCycle.phenologicalStage,
+            chillHoursAccumulated: activeCycle.chillHoursAccumulated,
+            estimatedHarvestDate: activeCycle.estimatedHarvestDate,
           }
         : null,
     });

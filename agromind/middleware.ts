@@ -4,6 +4,7 @@ const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/api/webhooks/(.*)",
+  "/api/iot/readings", // IoT devices push data without a user session
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
